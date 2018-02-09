@@ -34,7 +34,7 @@ def load_resize(base_path, image_ids,  width=224, height=224, resampler_choice=c
 	pass
 
 
-path ='./Training Set/'
+path ='../raw_data/Training Set/'
 ids = next(os.walk(path))[2]
 load_resize(path, ids, display_images='Display')
 
