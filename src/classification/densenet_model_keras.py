@@ -1,5 +1,6 @@
 from keras.applications.densenet import DenseNet201
 from keras.models import Model
+from PIL import Image
 from keras import optimizers
 from keras.layers import Input, Flatten, Dense, GlobalAveragePooling2D
 from keras.layers.convolutional import Conv2D
@@ -7,14 +8,16 @@ from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from keras.callbacks import TensorBoard
 from keras.callbacks import CSVLogger
+from keras.callbacks import ReduceLROnPlateau
 from keras.models import load_model
 import keras.backend as K
+from keras.preprocessing.image import ImageDataGenerator
 import tensorflow as tf
 import numpy as np
 import pandas as pd
-import os
+import os, cv2
 from keras.utils import to_categorical
-
+from tqdm import tqdm
 from config import conf
 
 conf = conf()
@@ -23,7 +26,7 @@ base_model = DenseNet201(include_top=False, weights='imagenet')
 base_model.summary()
 
 img_input = Input(shape=(conf.input_shape), name = 'image_input')
-output_densenet_conv = model(img_input)
+output_densenet_conv = base_model(img_input)
 
 # changes...
 x = Flatten(name='flatten')(output_densenet_conv)
@@ -47,24 +50,26 @@ checkpointer = ModelCheckpoint(filepath=conf.save_model_path+ "best_model.hdf5",
 					verbose=1, monitor='val_acc', save_best_only=True, 
 					save_weights_only=False, mode='max', period=1)
 
-tf_board = TensorBoard(log_dir=os.path.join(conf.log_path, "summary"), histogram_freq=100, write_graph=True, write_images=True)
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_lr=0.0001)
+tf_board = TensorBoard(log_dir=os.path.join(conf.log_path, "summary"), 
+				histogram_freq=100, 
+				write_graph=True, write_images=True)
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_lr=1e-6)
 csv_logger = CSVLogger(conf.log_path)
 
 ##data loading
 def load_process_data(image_path, label_path, model='DR'):
-	label_data = pd.read_csv(label_path)
+	label_data = pd.read_csv(label_path).iloc[:,:3]
 	if model == 'DR': 
-		y_train = to_categorical(np.expand_dims(label_data['Retinopathy grade'].to_matrix(), axis=1))
+		y_train = to_categorical(np.expand_dims(label_data['Retinopathy grade'].as_matrix(), axis=1))
 	elif model == 'DME':
-		y_train = to_categorical(np.expand_dims(label_data['Risk of macular edema'].to_matrix(), axis=1))
+		y_train = to_categorical(np.expand_dims(label_data['Risk of macular edema'].as_matrix(), axis=1))
 	else: 
 		print "Unknow model {} found".format(model) + "Allowed model: DR and DME"
 		raise 1
-	image_ids = label_data['Image name'].to_matrix()
+	image_ids = label_data['Image name'].as_matrix()
 	x_train = []
-	for image_id in image_ids:
-		path = os.path.join(image_path, image_id)
+	for image_id in tqdm(image_ids[:10]):
+		path = os.path.join(image_path, image_id + '.jpg')
 		orig_eye_data = np.array(Image.open(path).convert('RGB'))
 		gray_eye = cv2.cvtColor(orig_eye_data, cv2.COLOR_RGB2GRAY)
 
