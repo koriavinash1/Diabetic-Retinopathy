@@ -1,4 +1,4 @@
-from keras.applications.densenet import DenseNet201
+from keras.applications.densenet import DenseNet121
 from keras.models import Model
 from PIL import Image
 from keras import optimizers
@@ -22,17 +22,17 @@ from config import conf
 
 conf = conf()
 
-base_model = DenseNet201(include_top=False, weights='imagenet')
+base_model = DenseNet121(include_top=False, weights='imagenet')
 # base_model.summary()
 
 img_input = Input(shape=(conf.input_shape), name = 'image_input')
 output_densenet_conv = base_model(img_input)
 
 # changes...
-x = Conv2D(256, 5, activation='elu')(output_densenet_conv)
-x = Conv2D(32, 3, activation='elu')(x)
-x = Flatten(name='flatten')(x)
-x = Dense(256, activation='elu')(x)
+# x = Conv2D(256, 5, activation='elu')(output_densenet_conv)
+# x = Conv2D(32, 3, activation='elu')(x)
+x = Flatten(name='flatten')(output_densenet_conv)
+# x = Dense(256, activation='elu')(x)
 out = Dense(conf.nclasses, activation='softmax')(x)
 
 predicted_output = out
@@ -82,7 +82,7 @@ def load_process_data(image_path, label_path, model='DR'):
 		# remove background
 		eye_data = orig_eye_data[np.min(y):np.max(y), np.min(x):np.max(x)]
 		# print eye_data.shape, conf.resize_to, conf.resampler_choice
-		resized_image = cv2.resize(eye_data, conf.resize_to, interpolation = conf.resampler_choice)
+		resized_image = cv2.resize(eye_data, conf.resize_to, interpolation = conf.resampler_choice)/225.0
 		x_train.append(resized_image)
 	return (np.array(x_train)[:int(0.7*len(x_train))], y_train[:int(0.7*len(x_train))]),\
 		 (np.array(x_train)[int(0.7*len(x_train)):], y_train[int(0.7*len(x_train)):])
