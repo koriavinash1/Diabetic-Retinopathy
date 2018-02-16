@@ -19,6 +19,7 @@ import torchvision.models
 from torchvision.models.densenet import model_urls
 import torchnet as tnt
 from PIL import Image
+from loader import DataLoader
 # from  load_pad_resize import load_pad_resize
 plt.ion()   # interactive mode
 # /torch.cuda.set_rng_state(torch.ByteTensor(5))
@@ -77,7 +78,7 @@ image_datasets = {x: custom.ImageFolder(os.path.join(data_dir, x),
                   for x in ['train', 'valid']}
 # image_datasets = {x: custom.ImageFolder(os.path.join(data_dir, x))
 #                   for x in ['train', 'valid']}
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=5,
+dataloaders = {x: DataLoader(image_datasets[x], batch_size=5,
     num_workers=4,shuffle=True)
               for x in ['train', 'valid']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'valid']}
@@ -298,8 +299,7 @@ def train_model(model, optimizer, scheduler, num_epochs=25, output_path='/home/b
         print()
 
     time_elapsed = time.time() - since
-    print('Training complete in {:.0f}m {:.0f}s'.format(
-        time_elapsed // 60, time_elapsed % 60))
+    print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     print('Best val Acc: {:4f}'.format(best_acc))
 
     # load best model weights

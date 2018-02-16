@@ -4,20 +4,52 @@ import os
 from sklearn.utils import shuffle
 import shutil
 from PIL import Image
+import __future__
+
+#-----------------------------------------------------------------
+# Grade 0 : 168	Grade 0 : 134	Grade 0 : 34	
+# Grade 1 : 25		Grade 1 : 20	Grade 1 : 05	
+# Grade 2 : 168	Grade 2 : 136	Grade 2 : 32	
+# Grade 3 : 93		Grade 3 : 74	Grade 3 : 19	 	 	 
+# Grade 4 : 62		Grade 4 : 49	Grade 4 : 13
+#------------------------------------------------------------------
+# additional_images Grade 1 = 89 ; split 65 training : 24 testing
+# Total images for training
+# Grade 0: 134
+# Grade 1: 85 
+# Grade 2: 136
+# Grade 3: 74 
+# Grade 4: 49
+#-------------------------------------------------------------------
+# Max reshape size = (1024, 1024)
+# 
+# 
+# 
+#-----------------------------------------------------------------------
+
 
 original_full_data_path ='../raw_data/Training Set'
+additional_data_path = '../additional_data/images' # retinopathy_grade == 1
 
 csv_path = pd.read_csv('../raw_data/IDRiD_Training Set.csv')
+
 image_name_list = np.array(csv_path['Image name'])
 Retinopathy_grade= np.array(csv_path['Retinopathy grade'])
-Retinopathy_grade[Retinopathy_grade == 3] = 2
+
+# club two different classes
+# Retinopathy_grade[Retinopathy_grade == 3] = 3
 Retinopathy_grade[Retinopathy_grade == 4] = 3
+# If model predicts class 3 image is further sent to expert model
+# to classify between 3 and 4
 
 output_path = '../processed_data'
 if not os.path.exists(output_path):
 	os.mkdir(output_path)
+else:
+	shutil.rmtree(output_path)
+	os.mkdir(output_path)
 
-training_path  =output_path+'/train'
+training_path  = output_path+'/train'
 if not os.path.exists(training_path):
 	os.mkdir(training_path)
 validation_path=output_path+'/valid'
@@ -42,83 +74,22 @@ def shrink_image(img_path):
 	eye_tight= Image.fromarray(eye_tight)
 	return eye_tight
 
+
+# create class wise split and copy data 
+
 for class_of_interest in [0,1,2,3]:
-	if class_of_interest ==0:
 
-		modified_train_path = training_path+ '/class0'
-		if not os.path.exists (modified_train_path):
-			os.mkdir(modified_train_path)
+	modified_train_path = training_path+ '/class' + str(class_of_interest) 
+	if not os.path.exists (modified_train_path):
+		os.mkdir(modified_train_path)
 
+	modified_valid_path = validation_path+ '/class' + str(class_of_interest) 
+	if not os.path.exists (modified_valid_path):
+		os.mkdir(modified_valid_path)
 
-		modified_valid_path = validation_path+ '/class0'
-		if not os.path.exists (modified_valid_path):
-			os.mkdir(modified_valid_path)
-	
-		modified_test_path = testing_path+ '/class0'
-		if not os.path.exists (modified_test_path):
-			os.mkdir(modified_test_path)
-
-
-	if class_of_interest ==1:
-
-		modified_train_path = training_path+ '/class1'
-		if not os.path.exists (modified_train_path):
-			os.mkdir(modified_train_path)
-
-
-		modified_valid_path = validation_path+ '/class1'
-		if not os.path.exists (modified_valid_path):
-			os.mkdir(modified_valid_path)
-	
-		modified_test_path = testing_path+ '/class1'
-		if not os.path.exists (modified_test_path):
-			os.mkdir(modified_test_path)
-
-	if class_of_interest ==2:
-
-		modified_train_path = training_path+ '/class2'
-		if not os.path.exists (modified_train_path):
-			os.mkdir(modified_train_path)
-
-
-		modified_valid_path = validation_path+ '/class2'
-		if not os.path.exists (modified_valid_path):
-			os.mkdir(modified_valid_path)
-	
-		modified_test_path = testing_path+ '/class2'
-		if not os.path.exists (modified_test_path):
-			os.mkdir(modified_test_path)
-
-
-	if class_of_interest ==3:
-
-		modified_train_path = training_path+ '/class3'
-		if not os.path.exists (modified_train_path):
-			os.mkdir(modified_train_path)
-
-
-		modified_valid_path = validation_path+ '/class3'
-		if not os.path.exists (modified_valid_path):
-			os.mkdir(modified_valid_path)
-	
-		modified_test_path = testing_path+ '/class3'
-		if not os.path.exists (modified_test_path):
-			os.mkdir(modified_test_path)
-
-	if class_of_interest ==4:
-
-		modified_train_path = training_path+ '/class4'
-		if not os.path.exists (modified_train_path):
-			os.mkdir(modified_train_path)
-
-
-		modified_valid_path = validation_path+ '/class4'
-		if not os.path.exists (modified_valid_path):
-			os.mkdir(modified_valid_path)
-	
-		modified_test_path = testing_path+ '/class4'
-		if not os.path.exists (modified_test_path):
-			os.mkdir(modified_test_path)
+	modified_test_path = testing_path+ '/class' + str(class_of_interest) 
+	if not os.path.exists (modified_test_path):
+		os.mkdir(modified_test_path)
 
 
 	total_num_of_instances = (Retinopathy_grade==class_of_interest).sum()
@@ -133,7 +104,26 @@ for class_of_interest in [0,1,2,3]:
 	print len(modified_image_name_list)
 	### now let make the first n elements to make the training data
 
+	additional_images = next(os.walk(additional_data_path))[2]
+	additional_train_path = additional_images[int(0.7*len(additional_images)):]
+	additional_valid_path = additional_images[:int(0.7*len(additional_images))]
 
+	# add additional data 
+	if class_of_interest == 1:
+		# add code toresize image
+		for img_path in additional_train_path:
+			src = additional_data_path + '/'+ img_path
+			dstn = modified_train_path + '/'+ img_path
+			# for additional train
+			shrink_image(src).save(dstn)
+
+		for img_path in additional_valid_path:
+			src = additional_data_path + '/'+ img_path
+			dstn = modified_train_path + '/'+ img_path
+			# for additional valid
+			shrink_image(src).save(dstn)
+
+		print len(modified_image_name_list) + len(additional_images)
 
 	for i in xrange(train_instance):
 
@@ -143,7 +133,7 @@ for class_of_interest in [0,1,2,3]:
 		shrink_image(src).save(dstn)
 		# shutil.copy(src,dstn)
 
-	print 'training done'
+	print 'class ' + str(class_of_interest) + ' training done'
 	
 	for i in range(train_instance,train_instance+valid_instance):
 		# print i
@@ -153,7 +143,7 @@ for class_of_interest in [0,1,2,3]:
 		shrink_image(src).save(dstn)
 		# shutil.copy(src,dstn)
 
-	print 'validation done'
+	print 'class ' + str(class_of_interest) + ' validation done'
 	for i in xrange(train_instance+valid_instance,train_instance+valid_instance+test_instance):
 
 		src = original_full_data_path + '/'+ modified_image_name_list[i]+'.jpg'
@@ -162,5 +152,4 @@ for class_of_interest in [0,1,2,3]:
 		shrink_image(src).save(dstn)
 		# shutil.copy(src,dstn)
 
-	print ('testing done')
-
+	print 'class ' + str(class_of_interest) + ' testing done'
