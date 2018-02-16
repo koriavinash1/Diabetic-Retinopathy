@@ -59,6 +59,16 @@ reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, min_l
 csv_logger = CSVLogger(os.path.join(conf.log_path, "train_log.csv"))
 
 ##data loading
+def shrink_image(img_path):
+	orig_eye_data = Image.open(img_path).convert('RGB')
+
+	img = np.array(orig_eye_data)
+	gray_img = img[:,:,0]
+	y, x     = np.where(gray_img>20)
+	eye_tight= img[np.min(y):np.max(y),np.min(x):np.max(x)]
+	# eye_tight= Image.fromarray(eye_tight)
+	return eye_tight
+
 def load_process_data(image_path, label_path, model='DR'):
 	label_data = pd.read_csv(label_path).iloc[:,:3]
 	if model == 'DR': 
@@ -72,18 +82,8 @@ def load_process_data(image_path, label_path, model='DR'):
 	x_train = []
 	for image_id in tqdm(image_ids):
 		path = os.path.join(image_path, image_id + '.jpg')
-		orig_eye_data = np.array(Image.open(path).convert('RGB'))
-		gray_eye = cv2.cvtColor(orig_eye_data, cv2.COLOR_RGB2GRAY)
-
-		gray_eye[gray_eye > 20.0] = 255.0
-
-		y, x = np.where(gray_eye == 255.0)
-
-		# remove background
-		eye_data = orig_eye_data[np.min(y):np.max(y), np.min(x):np.max(x)]
-		# print eye_data.shape, conf.resize_to, conf.resampler_choice
-		resized_image = cv2.resize(eye_data, conf.resize_to, interpolation = conf.resampler_choice)/225.0
-		x_train.append(resized_image)
+		eye_tight = shrink_image(path)
+		x_train.append(eye_tight)
 	return (np.array(x_train)[:int(0.7*len(x_train))], y_train[:int(0.7*len(x_train))]),\
 		 (np.array(x_train)[int(0.7*len(x_train)):], y_train[int(0.7*len(x_train)):])
 
