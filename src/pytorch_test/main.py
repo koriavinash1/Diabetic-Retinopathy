@@ -8,15 +8,17 @@ DRGradeTrainer = DRGradeTrainer()
 
 #-------------------------------------------------------------------------------- 
 nclasses = 4
-
+nclasses_expert = 2
 def main ():
 	
 	#runTest()
+	runTrain(expert=False)
+	print "Expert model training...."
 	runTrain()
   
 #--------------------------------------------------------------------------------   
 
-def runTrain():
+def runTrain(expert = True):
 	
 	DENSENET121 = 'DENSE-NET-121'
 	DENSENET169 = 'DENSE-NET-169'
@@ -27,27 +29,32 @@ def runTrain():
 	timestampLaunch = timestampDate + '-' + timestampTime
 	
 	#---- Path to the directory with images
-	pathTrainData = '../../processed_data/train'
-	pathValidData = '../../processed_data/train'
+	if not expert:
+		pathTrainData = '../../processed_data/train'
+		pathValidData = '../../processed_data/train'
+		nnClassCount = nclasses
+	else: 
+		pathTrainData = '../../processed_data/expert/train'
+		pathValidData = '../../processed_data/expert/train'
+		nnClassCount = nclasses_expert
 	
 	#---- Neural network parameters: type of the network, is it pre-trained 
 	#---- on imagenet, number of classes
 	nnArchitecture = DENSENET121
 	nnIsTrained = True
-	nnClassCount = nclasses
 	
 	#---- Training settings: batch size, maximum number of epochs
 	trBatchSize = 4
-	trMaxEpoch = 100
+	trMaxEpoch = 50
 	
 	#---- Parameters related to image transforms: size of the down-scaled image, cropped image
 	imgtransResize = 256
 	imgtransCrop = 224
-		
-	pathModel = 'm-' + timestampLaunch + '.pth.tar'
 	
 	print ('Training NN architecture = ', nnArchitecture)
-	DRGradeTrainer.train(pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, imgtransResize, imgtransCrop, timestampLaunch, None)
+
+	DRGradeTrainer.train(pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, imgtransResize, imgtransCrop, timestampLaunch, None, expert)
+
 
 #-------------------------------------------------------------------------------- 
 

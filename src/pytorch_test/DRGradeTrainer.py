@@ -44,7 +44,7 @@ class DRGradeTrainer ():
 	#---- launchTimestamp - date/time, used to assign unique name for the checkpoint file
 	#---- checkpoint - if not None loads the model and continues training
 	
-	def train (self, pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, transResize, transCrop, launchTimestamp, checkpoint):
+	def train (self, pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, transResize, transCrop, launchTimestamp, checkpoint, expert = False):
 
 		
 		#-------------------- SETTINGS: NETWORK ARCHITECTURE
@@ -71,12 +71,14 @@ class DRGradeTrainer ():
 		dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=trBatchSize, shuffle=True,  num_workers=8, pin_memory=False)
 		dataLoaderVal = DataLoader(dataset=datasetVal, batch_size=trBatchSize, shuffle=False, num_workers=8, pin_memory=False)
 		
+		# print len(dataLoaderTrain), len(datasetTrain)
 		#-------------------- SETTINGS: OPTIMIZER & SCHEDULER
 		optimizer = optim.Adam (model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
 		scheduler = ReduceLROnPlateau(optimizer, factor = 0.1, patience = 5, mode = 'min')
 				
 		#-------------------- SETTINGS: LOSS
-		loss = torch.nn.BCELoss(size_average = True)
+		loss = torch.nn.BCELoss()
+		# loss = torch.nn.CrossEntropyLoss()
 		
 		#---- Load checkpoint 
 		if checkpoint != None:
@@ -95,9 +97,9 @@ class DRGradeTrainer ():
 			timestampDate = time.strftime("%d%m%Y")
 			timestampSTART = timestampDate + '-' + timestampTime
 			
-			print str(epochID)+"/" + str(trMaxEpoch) + "-----"
-			self.epochTrain (model, dataLoaderTrain, optimizer, scheduler, trMaxEpoch, nnClassCount, loss)
-			lossVal, losstensor = self.epochVal (model, dataLoaderVal, optimizer, scheduler, trMaxEpoch, nnClassCount, loss)
+			print str(epochID)+"/" + str(trMaxEpoch) + "---"
+			self.epochTrain (model, dataLoaderTrain, optimizer, scheduler, trMaxEpoch, nnClassCount, loss, trBatchSize)
+			lossVal, losstensor, acc = self.epochVal (model, dataLoaderVal, optimizer, scheduler, trMaxEpoch, nnClassCount, loss, trBatchSize)
 			
 			timestampTime = time.strftime("%H%M%S")
 			timestampDate = time.strftime("%d%m%Y")
@@ -106,16 +108,28 @@ class DRGradeTrainer ():
 			scheduler.step(losstensor.data[0])
 			
 			if lossVal < lossMIN:
-				lossMIN = lossVal    
-				torch.save({'epoch': epochID + 1, 'state_dict': model.state_dict(), 'best_loss': lossMIN, 'optimizer' : optimizer.state_dict()}, '../../models/m-' + launchTimestamp + '.pth.tar')
-				print ('Epoch [' + str(epochID + 1) + '] [save] [' + timestampEND + '] loss= ' + str(lossVal))
-				print confusion_meter
+				lossMIN = lossVal
+				if not expert: model_name = '../../models/m-' + launchTimestamp + '.pth.tar'
+				else : model_name = '../../models/expert-m-' + launchTimestamp + '.pth.tar'
+
+				torch.save({'epoch': epochID + 1, 'state_dict': model.state_dict(), 'best_loss': lossMIN, 'optimizer' : optimizer.state_dict()}, model_name)
+				print ('Epoch [' + str(epochID + 1) + '] [save] [' + timestampEND + '] loss= ' + str(lossVal)) + ' accuracy= ' + str(acc)
+				# print confusion_meter
 			else:
-				print ('Epoch [' + str(epochID + 1) + '] [----] [' + timestampEND + '] loss= ' + str(lossVal))
+				print ('Epoch [' + str(epochID + 1) + '] [----] [' + timestampEND + '] loss= ' + str(lossVal)) + ' accuracy= ' + str(acc)
 					 
 	#-------------------------------------------------------------------------------- 
-	   
-	def epochTrain (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, loss):
+
+	# compute accuracy
+	def accuracy(self, output, labels):
+		pred = torch.max(output, 1)[1]
+		label = torch.max(labels, 1)[1]
+		acc = torch.sum(pred == label)
+		return float(acc)
+	
+
+	#--------------------------------------------------------------------------------
+	def epochTrain (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, loss, trBatchSize):
 		
 		model.train()
 		for batchID, (input, target) in tqdm(enumerate (dataLoader)):
@@ -127,7 +141,10 @@ class DRGradeTrainer ():
 			varOutput = model(varInput)
 
 			lossvalue = loss(varOutput, varTarget)
-
+			# for crossentropy loss
+			# varTarget = torch.max(varOutput, 1)[1]
+			# varOutput = torch.max(varOutput, 1)[1]
+			# lossvalue = loss(varOutput, varTarget)
 			# print "BatchID: {}".format(batchID) + " loss :{}".format(lossvalue.data)		   
 			optimizer.zero_grad()
 			lossvalue.backward()
@@ -135,7 +152,7 @@ class DRGradeTrainer ():
 			
 	#-------------------------------------------------------------------------------- 
 		
-	def epochVal (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, loss):
+	def epochVal (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, loss, trBatchSize):
 		
 		model.eval ()
 		
@@ -145,6 +162,7 @@ class DRGradeTrainer ():
 		losstensorMean = 0
 		confusion_meter.reset()
 
+		acc = 0.0
 		for i, (input, target) in enumerate (dataLoader):
 			
 			# target = target.cuda(async=True)
@@ -153,9 +171,15 @@ class DRGradeTrainer ():
 			varTarget = torch.autograd.Variable(target, volatile=True)    
 			varOutput = model(varInput)
 			
+			acc += self.accuracy(varOutput, varTarget)/ (len(dataLoader)*trBatchSize)
 			losstensor = loss(varOutput, varTarget)
-			losstensorMean += losstensor
 			
+			# for crossentropy loss
+			# varTarget = torch.max(varOutput, 1)[1]
+			# varOutput = torch.max(varOutput, 1)[1]
+			# losstensor= loss(varOutput, varTarget)
+
+			losstensorMean += losstensor
 			# confusion_meter.add(varOutput.view(-1), varTarget.data.view(-1))
 			lossVal += losstensor.data[0]
 			lossValNorm += 1
@@ -164,105 +188,4 @@ class DRGradeTrainer ():
 		outLoss = lossVal / lossValNorm
 		losstensorMean = losstensorMean / lossValNorm
 		
-		return outLoss, losstensorMean
-			   
-	#--------------------------------------------------------------------------------     
-	 
-	#---- Computes area under ROC curve 
-	#---- dataGT - ground truth data
-	#---- dataPRED - predicted data
-	#---- classCount - number of classes
-	
-	def computeAUROC (self, dataGT, dataPRED, classCount):
-		
-		outAUROC = []
-		
-		datanpGT = dataGT.cpu().numpy()
-		datanpPRED = dataPRED.cpu().numpy()
-		
-		for i in range(classCount):
-			outAUROC.append(roc_auc_score(datanpGT[:, i], datanpPRED[:, i]))
-			
-		return outAUROC
-		
-		
-	#--------------------------------------------------------------------------------  
-	
-	#---- Test the trained network 
-	#---- pathDirData - path to the directory that contains images
-	#---- pathFileTrain - path to the file that contains image paths and label pairs (training set)
-	#---- pathFileVal - path to the file that contains image path and label pairs (validation set)
-	#---- nnArchitecture - model architecture 'DENSE-NET-121', 'DENSE-NET-169' or 'DENSE-NET-201'
-	#---- nnIsTrained - if True, uses pre-trained version of the network (pre-trained on imagenet)
-	#---- nnClassCount - number of output classes 
-	#---- trBatchSize - batch size
-	#---- trMaxEpoch - number of epochs
-	#---- transResize - size of the image to scale down to (not used in current implementation)
-	#---- transCrop - size of the cropped image 
-	#---- launchTimestamp - date/time, used to assign unique name for the checkpoint file
-	#---- checkpoint - if not None loads the model and continues training
-	
-	def test (self, pathTestData, pathModel, nnArchitecture, nnClassCount, nnIsTrained, trBatchSize, transResize, transCrop, launchTimeStamp):   
-		
-		
-		CLASS_NAMES = [ 'Grade 0', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4']
-		
-		cudnn.benchmark = True
-		
-		#-------------------- SETTINGS: NETWORK ARCHITECTURE, MODEL LOAD
-		if nnArchitecture == 'DENSE-NET-121': model = DenseNet121(nnClassCount, nnIsTrained)
-		elif nnArchitecture == 'DENSE-NET-169': model = DenseNet169(nnClassCount, nnIsTrained)
-		elif nnArchitecture == 'DENSE-NET-201': model = DenseNet201(nnClassCount, nnIsTrained)
-		
-		# model = torch.nn.DataParallel(model).cuda() 
-		
-		modelCheckpoint = torch.load(pathModel)
-		model.load_state_dict(modelCheckpoint['state_dict'])
-
-		#-------------------- SETTINGS: DATA TRANSFORMS, TEN CROPS
-		normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-		
-		#-------------------- SETTINGS: DATASET BUILDERS
-		transformList = []
-		transformList.append(transforms.Resize(transResize))
-		transformList.append(transforms.TenCrop(transCrop))
-		transformList.append(transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])))
-		transformList.append(transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops])))
-		transformSequence=transforms.Compose(transformList)
-		
-		datasetTest = DatasetGenerator(pathImageDirectory=pathTestData, transform=transformSequence)
-		dataLoaderTest = DataLoader(dataset=datasetTest, batch_size=trBatchSize, num_workers=8, shuffle=False, pin_memory=False)
-		
-		# outGT = torch.FloatTensor().cuda()
-		# outPRED = torch.FloatTensor().cuda()
-	   	
-	   	outGT = torch.FloatTensor()
-		outPRED = torch.FloatTensor()
-
-		model.eval()
-		
-		for i, (input, target) in enumerate(dataLoaderTest):
-			
-			# target = target.cuda()
-			outGT = torch.cat((outGT, target), 0)
-			
-			bs, n_crops, c, h, w = input.size()
-			
-			varInput = torch.autograd.Variable(input.view(-1, c, h, w).cuda(), volatile=True)
-			
-			out = model(varInput)
-			outMean = out.view(bs, n_crops, -1).mean(1)
-			
-			outPRED = torch.cat((outPRED, outMean.data), 0)
-
-		aurocIndividual = self.computeAUROC(outGT, outPRED, nnClassCount)
-		aurocMean = np.array(aurocIndividual).mean()
-		
-		print ('AUROC mean ', aurocMean)
-		
-		for i in range (0, len(aurocIndividual)):
-			print (CLASS_NAMES[i], ' ', aurocIndividual[i])
-		
-	 
-		return
-#-------------------------------------------------------------------------------- 
+		return outLoss, losstensorMean, acc

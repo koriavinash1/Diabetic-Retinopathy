@@ -78,7 +78,7 @@ image_datasets = {x: custom.ImageFolder(os.path.join(data_dir, x),
                   for x in ['train', 'valid']}
 # image_datasets = {x: custom.ImageFolder(os.path.join(data_dir, x))
 #                   for x in ['train', 'valid']}
-dataloaders = {x: DataLoader(image_datasets[x], batch_size=5,
+dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=5,
     num_workers=4,shuffle=True)
               for x in ['train', 'valid']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'valid']}
