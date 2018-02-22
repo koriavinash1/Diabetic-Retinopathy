@@ -215,11 +215,11 @@ def train_model(model, optimizer, scheduler, num_epochs=25, output_path='/home/b
             for data in dataloaders[phase]:
                 # get the inputs
                 inputs, labels = data
-
+                print (labels)
                 # wrap them in Variable
                 if use_gpu:
-                    inputs = Variable(inputs.cuda())
-                    labels = Variable(labels.cuda())
+                    inputs = Variable(inputs)
+                    labels = Variable(labels)
                 else:
                     inputs, labels = Variable(inputs), Variable(labels)
 
@@ -358,7 +358,7 @@ if use_gpu:
 optimizer_ft = optim.Adam(model_ft.parameters(),lr=0.0001)
 
 # Decay LR by a factor of 0.01 every 3 epochs
-exp_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, verbose=False, threshold=0.0001, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-08)
+exp_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer_ft, mode='min', factor=0.1, patience=10, verbose=False, threshold=0.0001, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-08)
 
 
 

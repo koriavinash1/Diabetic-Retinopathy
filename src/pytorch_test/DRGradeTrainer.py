@@ -16,9 +16,6 @@ import torch.nn.functional as func
 
 from sklearn.metrics.ranking import roc_auc_score
 
-from DensenetModels import DenseNet121
-from DensenetModels import DenseNet169
-from DensenetModels import DenseNet201
 from DatasetGenerator import DatasetGenerator
 
 import torchnet as tnt
@@ -48,10 +45,8 @@ class DRGradeTrainer ():
 
 		
 		#-------------------- SETTINGS: NETWORK ARCHITECTURE
-		if nnArchitecture == 'DENSE-NET-121': model = DenseNet121(nnClassCount, nnIsTrained)
-		elif nnArchitecture == 'DENSE-NET-169': model = DenseNet169(nnClassCount, nnIsTrained)
-		elif nnArchitecture == 'DENSE-NET-201': model = DenseNet201(nnClassCount, nnIsTrained)
-		
+		model = nnArchitecture['model']
+		print model
 		model = torch.nn.DataParallel(model)
 				
 		#-------------------- SETTINGS: DATA TRANSFORMS
@@ -65,8 +60,8 @@ class DRGradeTrainer ():
 		transformSequence=transforms.Compose(transformList)
 
 		#-------------------- SETTINGS: DATASET BUILDERS
-		datasetTrain = DatasetGenerator(pathImageDirectory=pathTrainData, transform=transformSequence)
-		datasetVal =   DatasetGenerator(pathImageDirectory=pathValidData, transform=transformSequence)
+		datasetTrain = DatasetGenerator(pathImageDirectory=pathTrainData, transform=transformSequence, nclasses=nnClassCount)
+		datasetVal =   DatasetGenerator(pathImageDirectory=pathValidData, transform=transformSequence, nclasses = nnClassCount)
 			  
 		dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=trBatchSize, shuffle=True,  num_workers=8, pin_memory=False)
 		dataLoaderVal = DataLoader(dataset=datasetVal, batch_size=trBatchSize, shuffle=False, num_workers=8, pin_memory=False)
@@ -77,8 +72,8 @@ class DRGradeTrainer ():
 		scheduler = ReduceLROnPlateau(optimizer, factor = 0.1, patience = 5, mode = 'min')
 				
 		#-------------------- SETTINGS: LOSS
-		loss = torch.nn.BCELoss()
-		# loss = torch.nn.CrossEntropyLoss()
+		# loss = torch.nn.BCELoss()
+		criterion = torch.nn.CrossEntropyLoss()
 		
 		#---- Load checkpoint 
 		if checkpoint != None:
@@ -98,8 +93,8 @@ class DRGradeTrainer ():
 			timestampSTART = timestampDate + '-' + timestampTime
 			
 			print str(epochID)+"/" + str(trMaxEpoch) + "---"
-			self.epochTrain (model, dataLoaderTrain, optimizer, scheduler, trMaxEpoch, nnClassCount, loss, trBatchSize)
-			lossVal, losstensor, acc = self.epochVal (model, dataLoaderVal, optimizer, scheduler, trMaxEpoch, nnClassCount, loss, trBatchSize)
+			self.epochTrain (model, dataLoaderTrain, optimizer, scheduler, trMaxEpoch, nnClassCount, criterion, trBatchSize)
+			lossVal, losstensor, acc = self.epochVal (model, dataLoaderVal, optimizer, scheduler, trMaxEpoch, nnClassCount, criterion, trBatchSize)
 			
 			timestampTime = time.strftime("%H%M%S")
 			timestampDate = time.strftime("%d%m%Y")
@@ -109,10 +104,14 @@ class DRGradeTrainer ():
 			
 			if lossVal < lossMIN:
 				lossMIN = lossVal
-				if not expert: model_name = '../../models/m-' + launchTimestamp + '.pth.tar'
-				else : model_name = '../../models/expert-m-' + launchTimestamp + '.pth.tar'
+				# if not expert: model_name = '../../models/m-' + launchTimestamp + '.pth.tar'
+				# else : model_name = '../../models/expert-m-' + launchTimestamp + '.pth.tar'
 
-				torch.save({'epoch': epochID + 1, 'state_dict': model.state_dict(), 'best_loss': lossMIN, 'optimizer' : optimizer.state_dict()}, model_name)
+				if not expert: model_name = '../../models/m-' + nnArchitecture['name'] + '.pth.tar'
+				else : model_name = '../../models/expert-m-' + nnArchitecture['name'] + '.pth.tar'
+
+				# torch.save({'epoch': epochID + 1, 'state_dict': model.state_dict(), 'best_loss': lossMIN, 'optimizer' : optimizer.state_dict()}, model_name)
+				torch.save(model, model_name)
 				print ('Epoch [' + str(epochID + 1) + '] [save] [' + timestampEND + '] loss= ' + str(lossVal)) + ' accuracy= ' + str(acc)
 				# print confusion_meter
 			else:
@@ -123,13 +122,13 @@ class DRGradeTrainer ():
 	# compute accuracy
 	def accuracy(self, output, labels):
 		pred = torch.max(output, 1)[1]
-		label = torch.max(labels, 1)[1]
-		acc = torch.sum(pred == label)
+		# label = torch.max(labels, 1)[1]
+		acc = torch.sum(pred == labels)
 		return float(acc)
 	
 
 	#--------------------------------------------------------------------------------
-	def epochTrain (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, loss, trBatchSize):
+	def epochTrain (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, criterion, trBatchSize):
 		
 		model.train()
 		for batchID, (input, target) in tqdm(enumerate (dataLoader)):
@@ -137,22 +136,28 @@ class DRGradeTrainer ():
 			# target = target.cuda(async = True)
 			
 			varInput = torch.autograd.Variable(input)
-			varTarget = torch.autograd.Variable(target)         
+			varTarget = torch.squeeze(torch.autograd.Variable(target))
 			varOutput = model(varInput)
 
-			lossvalue = loss(varOutput, varTarget)
-			# for crossentropy loss
-			# varTarget = torch.max(varOutput, 1)[1]
-			# varOutput = torch.max(varOutput, 1)[1]
-			# lossvalue = loss(varOutput, varTarget)
-			# print "BatchID: {}".format(batchID) + " loss :{}".format(lossvalue.data)		   
-			optimizer.zero_grad()
+			# weighted cross entropy
+			eps = 1e-5
+			numpified_labels = varTarget.cpu().data.numpy()
+			w0 = (numpified_labels==0).sum() + eps
+			w1 = (numpified_labels==1).sum() + eps
+			w2 = (numpified_labels==2).sum() + eps
+			w3 = (numpified_labels==3).sum() + eps
+			# w4 = (numpified_labels==4).sum()
+
+			wce =  torch.from_numpy(np.asarray([1/w0, 1/w1, 1/w2, 1/w3])).float()
+			# criterion = torch.nn.CrossEntropyLoss(weight=wce)
+
+			lossvalue = criterion(varOutput, varTarget)
 			lossvalue.backward()
 			optimizer.step()
 			
 	#-------------------------------------------------------------------------------- 
 		
-	def epochVal (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, loss, trBatchSize):
+	def epochVal (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, criterion, trBatchSize):
 		
 		model.eval ()
 		
@@ -161,6 +166,8 @@ class DRGradeTrainer ():
 		
 		losstensorMean = 0
 		confusion_meter.reset()
+		outputs = []
+		targets = []
 
 		acc = 0.0
 		for i, (input, target) in enumerate (dataLoader):
@@ -168,23 +175,33 @@ class DRGradeTrainer ():
 			# target = target.cuda(async=True)
 				 
 			varInput = torch.autograd.Variable(input, volatile=True)
-			varTarget = torch.autograd.Variable(target, volatile=True)    
+			varTarget = torch.squeeze(torch.autograd.Variable(target, volatile=True) )
 			varOutput = model(varInput)
-			
+			outputs.extend(varOutput.data)
+			targets.extend(varTarget.data)
+
 			acc += self.accuracy(varOutput, varTarget)/ (len(dataLoader)*trBatchSize)
-			losstensor = loss(varOutput, varTarget)
-			
+			# confusion_meter.conf += 
+			losstensor = criterion(varOutput, varTarget)
+
 			# for crossentropy loss
 			# varTarget = torch.max(varOutput, 1)[1]
 			# varOutput = torch.max(varOutput, 1)[1]
 			# losstensor= loss(varOutput, varTarget)
 
 			losstensorMean += losstensor
-			# confusion_meter.add(varOutput.view(-1), varTarget.data.view(-1))
 			lossVal += losstensor.data[0]
 			lossValNorm += 1
 
-		
+		outputs = torch.from_numpy(np.array(outputs))
+		targets = torch.from_numpy(np.array(targets))
+
+		_, preds = torch.max(outputs.data, 1)
+		del _ 
+		confusion_meter.add(preds.view(-1), targets.data.view(-1))
+
+		print confusion_meter.conf
+
 		outLoss = lossVal / lossValNorm
 		losstensorMean = losstensorMean / lossValNorm
 		
