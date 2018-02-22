@@ -131,7 +131,7 @@ class DRGradeTrainer ():
 	def epochTrain (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, criterion, trBatchSize):
 		
 		model.train()
-		for batchID, (input, target) in tqdm(enumerate (dataLoader)):
+		for batchID, (input, target, _) in tqdm(enumerate (dataLoader)):
 						
 			# target = target.cuda(async = True)
 			
@@ -170,7 +170,7 @@ class DRGradeTrainer ():
 		targets = []
 
 		acc = 0.0
-		for i, (input, target) in enumerate (dataLoader):
+		for i, (input, target, _s) in enumerate (dataLoader):
 			
 			# target = target.cuda(async=True)
 				 

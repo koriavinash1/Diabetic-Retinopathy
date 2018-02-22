@@ -17,9 +17,6 @@ class DRGradeTester():
 	
 	def test (self, pathTestData, pathsModel1, pathsExpertmodel, nnArchitecture, nnClassCount, nnIsTrained, trBatchSize, transResize, transCrop, launchTimeStamp):   
 		
-		for pathModel, pathExpertmodel in zip(pathsModel1, pathsExpertmodel):
-		model = torch.load(pathModel)
-
 		#-------------------- SETTINGS: DATA TRANSFORMS, TEN CROPS
 		normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 		
@@ -31,11 +28,8 @@ class DRGradeTester():
 		transformList.append(transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops])))
 		transformSequence=transforms.Compose(transformList)
 		
-		datasetTest = DatasetGenerator(pathImageDirectory=pathTestData, transform=transformSequence)
-		dataLoaderTest = DataLoader(dataset=datasetTest, batch_size=trBatchSize, num_workers=8, shuffle=False, pin_memory=False)
-		
-		# outGT = torch.FloatTensor().cuda()
-		# outPRED = torch.FloatTensor().cuda()
+		datasetTest = DatasetGenerator(pathImageDirectory=pathTestData, transform=transformSequence, nclasses = 4)
+		dataLoaderTest = DataLoader(dataset=datasetTest, batch_size=1, num_workers=8, shuffle=False, pin_memory=False)
 	   	
 	   	outGT = torch.FloatTensor()
 		outPRED = torch.FloatTensor()
@@ -44,6 +38,9 @@ class DRGradeTester():
 		
 		for i, (input, target) in enumerate(dataLoaderTest):
 			
+			for pathModel, pathExpertmodel in zip(pathsModel1, pathsExpertmodel):
+			model = torch.load(pathModel)
+
 			# target = target.cuda()
 			outGT = torch.cat((outGT, target), 0)
 			

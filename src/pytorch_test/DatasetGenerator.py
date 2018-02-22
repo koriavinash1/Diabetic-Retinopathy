@@ -25,10 +25,10 @@ class DatasetGenerator (Dataset):
 		#---- Open folder get class folder
 
 		subdir = next(os.walk(pathImageDirectory))[1]
-		assert  self.nclasses == len(subdir),\
-		"nclasses defined is not equal to number of folders in given path" 
+		# assert  self.nclasses == len(subdir),\
+		# "nclasses defined is not equal to number of folders in given path" 
 
-		for imclass in range(self.nclasses):
+		for imclass in range(len(subdir)):
 			folder_path = os.path.join(pathImageDirectory, "class"+str(imclass))
 			img_paths = next(os.walk(folder_path))[2]
 
@@ -53,7 +53,7 @@ class DatasetGenerator (Dataset):
 		# print  self.listImageLabels[index], imageLabel
 		if self.transform != None: imageData = self.transform(imageData)
 		
-		return imageData, imageLabel
+		return imageData, imageLabel, imagePath
 		
 	#-------------------------------------------------------------------------------- 
 	
