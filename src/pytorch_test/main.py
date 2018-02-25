@@ -3,6 +3,7 @@ import numpy as np
 import time
 import sys
 
+
 from DensenetModels import DenseNet121
 from DensenetModels import DenseNet169
 from DensenetModels import DenseNet201
@@ -13,14 +14,18 @@ from DensenetModels import ResNet50
 from DensenetModels import ResNet34
 from DensenetModels import ResNet18
 from DRGradeTrainer import DRGradeTrainer
-DRGradeTrainer = DRGradeTrainer()
 
+from inferance import DRGradeTester
+
+DRGradeTrainer = DRGradeTrainer()
+DRGradeTester  = DRGradeTester()
+
+Test = False
 #-------------------------------------------------------------------------------- 
 nclasses = 4
 nclasses_expert = 2
-
-
-def main(nnClassCount, nnIsTrained):
+def main (nnClassCount, nnIsTrained):
+	nnClassCount = nclasses
 	nnArchitectureList = [{'name': 'densenet201', 'model' : DenseNet201(nnClassCount, nnIsTrained)}, 
 			{'name': 'densenet169', 'model' : DenseNet169(nnClassCount, nnIsTrained)}, 
 			{'name': 'densenet121', 'model': DenseNet121(nnClassCount, nnIsTrained)}, 
@@ -44,8 +49,13 @@ def main(nnClassCount, nnIsTrained):
 			{'name': 'resnet18', 'model': ResNet18(nnClassCount, nnIsTrained)}]
 
 	for nnArchitecture in nnArchitectureList:
-		print "Expert model training...."
-		runTrain(nnArchitecture=nnArchitecture)
+		print ("Expert model training....")
+		runTrain(expert=True, nnArchitecture=nnArchitecture)
+
+	#runTest()
+	# runTrain(expert=False)
+	# print ("Expert model training....")
+	# runTrain()
   
 #--------------------------------------------------------------------------------   
 
@@ -61,8 +71,8 @@ def runTrain(expert = True, nnArchitecture = None):
 		pathValidData = '../../processed_data/valid'
 		nnClassCount = nclasses
 	else: 
-		pathTrainData = '../../processed_data/expert/train'
-		pathValidData = '../../processed_data/expert/valid'
+		pathTrainData = '../../processed_data/expert_model/train'
+		pathValidData = '../../processed_data/expert_model/valid'
 		nnClassCount = nclasses_expert
 	
 	#---- Neural network parameters: type of the network, is it pre-trained 
@@ -84,39 +94,39 @@ def runTrain(expert = True, nnArchitecture = None):
 
 #-------------------------------------------------------------------------------- 
 
-def runTest(nnArchitecture):
+def runTest():
 	
-	pathTestData = '../../processed_data/train'
+	pathTestData = '../../processed_data/test'
 	nnIsTrained = True
 	nnClassCount = nclasses
-	trBatchSize = 4
+	trBatchSize = 1
 	imgtransResize = 256
 	imgtransCrop = 224
-	
-	pathsModel1 = ['../../models/m-densenet201.pth.tar',
-			'../../models/m-densenet169.pth.tar',
-			'../../models/m-densenet121.pth.tar',
-			'../../models/m-resnet152.pth.tar',
-			'../../models/m-resnet101.pth.tar',
-			'../../models/m-resnet50.pth.tar',
-			'../../models/m-resnet34.pth.tar',
-			'../../models/m-resnet18.pth.tar']
+	pathsModel1 = ['../../models/densenet201.csv',
+			'../../models/densenet169.csv',
+			'../../models/densenet121.csv',
+			'../../models/resnet152.csv',
+			'../../models/resnet101.csv',
+			'../../models/resnet50.csv',
+			'../../models/resnet34.csv',
+			'../../models/resnet18.csv']
 
-	pathsExpertModel = ['../../models/expert-m-densenet201.pth.tar',
-				'../../models/expert-m-densenet169.pth.tar',
-				'../../models/expert-m-densenet121.pth.tar',
-				'../../models/expert-m-resnet152.pth.tar',
-				'../../models/expert-m-resnet101.pth.tar',
-				'../../models/expert-m-resnet50.pth.tar',
-				'../../models/expert-m-resnet34.pth.tar',
-				'../../models/expert-m-resnet18.pth.tar']
+	pathsExpertModel = ['../../models/expert_modeldensenet201.csv',
+				'../../models/expert_modeldensenet169.csv',
+				'../../models/expert_modeldensenet121.csv',
+				'../../models/expert_modelresnet152.csv',
+				'../../models/expert_modelresnet101.csv',
+				'../../models/expert_modelresnet50.csv',
+				'../../models/expert_modelresnet34.csv',
+				'../../models/expert_modelresnet18.csv']
 	
 	timestampLaunch = ''
 
+	# nnArchitecture = DenseNet121(nnClassCount, nnIsTrained)
 	print ('Testing the trained model')
-	DRGradeTrainer.test(pathTestData, pathsModel1, pathsExpertModel, nnArchitecture, nnClassCount, nnIsTrained, trBatchSize, imgtransResize, imgtransCrop, timestampLaunch)
-
+	DRGradeTester.test(pathTestData, pathsModel1, pathsExpertModel, trBatchSize, imgtransResize, imgtransCrop, timestampLaunch)
 #-------------------------------------------------------------------------------- 
 
-if __name__ == '__main__':
-	main(nclasses, True)
+if __name__ == '__main__':	
+	main(4, True)
+	runTest()

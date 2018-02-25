@@ -15,20 +15,19 @@ class DatasetGenerator (Dataset):
 	
 	#-------------------------------------------------------------------------------- 
 	
-	def __init__ (self, pathImageDirectory, transform, nclasses):
+	def __init__ (self, pathImageDirectory, transform):
 	
 		self.listImagePaths = []
 		self.listImageLabels = []
 		self.transform = transform
-		self.nclasses = nclasses
-	
+		
 		#---- Open folder get class folder
 
 		subdir = next(os.walk(pathImageDirectory))[1]
-		# assert  self.nclasses == len(subdir),\
-		# "nclasses defined is not equal to number of folders in given path" 
+		nclasses = len(subdir)
+		print ("Total number of classes: " + str(nclasses))
 
-		for imclass in range(len(subdir)):
+		for imclass in range(nclasses):
 			folder_path = os.path.join(pathImageDirectory, "class"+str(imclass))
 			img_paths = next(os.walk(folder_path))[2]
 
@@ -36,10 +35,9 @@ class DatasetGenerator (Dataset):
 				img_path = os.path.join(folder_path, img)
 				self.listImagePaths.append(img_path)
 
-				self.listImageLabels.append([imclass])
-		
-		self.listImageLabels = self.listImageLabels[:5]
-		self.listImagePaths = self.listImagePaths[:5]
+				self.listImageLabels.append(one_hot(imclass, nclasses))
+		# self.listImagePaths = self.listImagePaths[:5]
+		# self.listImageLabels = self.listImageLabels[:5]
 	#-------------------------------------------------------------------------------- 
 	
 	def __getitem__(self, index):
@@ -47,10 +45,10 @@ class DatasetGenerator (Dataset):
 		imagePath = self.listImagePaths[index]
 		
 		imageData = Image.open(imagePath).convert('RGB')
-		imageLabel= torch.LongTensor(self.listImageLabels[index])
+		imageLabel= torch.FloatTensor(self.listImageLabels[index])
 		
 		# print imagePath, np.array(imageData).shape
-		# print  self.listImageLabels[index], imageLabel
+		# print 
 		if self.transform != None: imageData = self.transform(imageData)
 		
 		return imageData, imageLabel, imagePath
@@ -62,4 +60,3 @@ class DatasetGenerator (Dataset):
 		return len(self.listImagePaths)
 	
  #-------------------------------------------------------------------------------- 
-	

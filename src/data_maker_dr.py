@@ -110,9 +110,9 @@ for class_of_interest in [3, 4]:
 
 	modified_image_name_list  = image_name_list[np.where(Retinopathy_grade==class_of_interest)]
 
-	print len(modified_image_name_list)
+	print (len(modified_image_name_list))
 
-	for i in xrange(train_instance):
+	for i in range(train_instance):
 
 		src = original_full_data_path + '/'+ modified_image_name_list[i]+'.jpg'
 		dstn = modified_train_path + '/'+ modified_image_name_list[i]+'.jpg'
@@ -120,7 +120,7 @@ for class_of_interest in [3, 4]:
 		shrink_image(src).save(dstn)
 		# shutil.copy(src,dstn)
 
-	print 'class ' + str(class_of_interest) + ' training done'
+	print ('class ' + str(class_of_interest) + ' training done')
 	
 	for i in range(train_instance,train_instance+valid_instance):
 		# print i
@@ -130,8 +130,8 @@ for class_of_interest in [3, 4]:
 		shrink_image(src).save(dstn)
 		# shutil.copy(src,dstn)
 
-	print 'class ' + str(class_of_interest) + ' validation done'
-	for i in xrange(train_instance+valid_instance,train_instance+valid_instance+test_instance):
+	print ('class ' + str(class_of_interest) + ' validation done')
+	for i in range(train_instance+valid_instance,train_instance+valid_instance+test_instance):
 
 		src = original_full_data_path + '/'+ modified_image_name_list[i]+'.jpg'
 		dstn = modified_test_path + '/'+ modified_image_name_list[i]+'.jpg'
@@ -139,10 +139,10 @@ for class_of_interest in [3, 4]:
 		shrink_image(src).save(dstn)
 		# shutil.copy(src,dstn)
 
-	print 'class ' + str(class_of_interest) + ' testing done'
+	print ('class ' + str(class_of_interest) + ' testing done')
 
 ############################################################################
-print "expert datasetgeneration done!!......."
+print ("expert datasetgeneration done!!.......")
 # club two different classes
 # Retinopathy_grade[Retinopathy_grade == 3] = 3
 Retinopathy_grade[Retinopathy_grade == 4] = 3
@@ -174,12 +174,13 @@ for class_of_interest in [0,1,2,3]:
 
 	modified_image_name_list  = image_name_list[np.where(Retinopathy_grade==class_of_interest)]
 
-	print len(modified_image_name_list)
+	print (len(modified_image_name_list))
 	### now let make the first n elements to make the training data
 
 	additional_images = next(os.walk(additional_data_path))[2]
-	additional_train_path = additional_images[int(0.7*len(additional_images)):]
-	additional_valid_path = additional_images[:int(0.7*len(additional_images))]
+	additional_train_path = additional_images[:int(0.7*len(additional_images))]
+	additional_valid_path = additional_images[int(0.7*len(additional_images)):int(0.7*len(additional_images)) + int(0.2*len(additional_images))]
+	additional_test_path = additional_images[int(0.7*len(additional_images)) + int(0.2*len(additional_images)):]
 
 	# add additional data 
 	if class_of_interest == 1:
@@ -192,13 +193,19 @@ for class_of_interest in [0,1,2,3]:
 
 		for img_path in additional_valid_path:
 			src = additional_data_path + '/'+ img_path
-			dstn = modified_train_path + '/'+ img_path
+			dstn = modified_valid_path + '/'+ img_path
 			# for additional valid
 			shrink_image(src).save(dstn)
 
-		print len(modified_image_name_list) + len(additional_images)
+		for img_path in additional_test_path:
+			src = additional_data_path + '/'+ img_path
+			dstn = modified_test_path + '/'+ img_path
+			# for additional test
+			shrink_image(src).save(dstn)
 
-	for i in xrange(train_instance):
+		print (len(modified_image_name_list) + len(additional_images))
+
+	for i in range(train_instance):
 
 		src = original_full_data_path + '/'+ modified_image_name_list[i]+'.jpg'
 		dstn = modified_train_path + '/'+ modified_image_name_list[i]+'.jpg'
@@ -206,7 +213,7 @@ for class_of_interest in [0,1,2,3]:
 		shrink_image(src).save(dstn)
 		# shutil.copy(src,dstn)
 
-	print 'class ' + str(class_of_interest) + ' training done'
+	print ('class ' + str(class_of_interest) + ' training done')
 	
 	for i in range(train_instance,train_instance+valid_instance):
 		# print i
@@ -216,8 +223,8 @@ for class_of_interest in [0,1,2,3]:
 		shrink_image(src).save(dstn)
 		# shutil.copy(src,dstn)
 
-	print 'class ' + str(class_of_interest) + ' validation done'
-	for i in xrange(train_instance+valid_instance,train_instance+valid_instance+test_instance):
+	print ('class ' + str(class_of_interest) + ' validation done')
+	for i in range(train_instance+valid_instance,train_instance+valid_instance+test_instance):
 
 		src = original_full_data_path + '/'+ modified_image_name_list[i]+'.jpg'
 		dstn = modified_test_path + '/'+ modified_image_name_list[i]+'.jpg'
@@ -225,4 +232,4 @@ for class_of_interest in [0,1,2,3]:
 		shrink_image(src).save(dstn)
 		# shutil.copy(src,dstn)
 
-	print 'class ' + str(class_of_interest) + ' testing done'
+	print ('class ' + str(class_of_interest) + ' testing done')
