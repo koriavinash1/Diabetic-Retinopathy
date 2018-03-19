@@ -6,7 +6,9 @@
 
 > "./raw_data/Training Set" : for training data (in gitignore)
 
-> "./processed_data" : for training data after pre processing if required (in gitignore)
+> "./processed_data" : for training data after pre processing if required (in gitignore)\
+
+> "./aditional_data" : for training data after pre processing if required (in gitignore)
 
 #### Packages Required
 
@@ -14,6 +16,8 @@
 
 > tensorflow
 
-> opencv
+> pytorch
 
 > pandas
+
+> PIL
