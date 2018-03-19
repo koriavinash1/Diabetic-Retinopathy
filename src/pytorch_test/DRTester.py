@@ -27,7 +27,7 @@ from tqdm import tqdm
 import time 
 
 
-class DRGradeInferenceMaxMax():
+class DRGradeTesterMaxMax():
 	#--------------------------------------------------------------------------------  
 	#---- Test the trained network 
 	#---- pathDirData - path to the directory that contains images
@@ -138,20 +138,11 @@ class DRGradeInferenceMaxMax():
 				max_expert_output = np.bincount(np.array(max_expert))
 				final_output = np.argmax(max_expert_output)
 
-			image_paths.append(path)
-			outPREDs.append(final_output)
-		
-		sub = pd.DataFrame()
-		sub['ImagePaths'] = image_paths
-		sub['predicted'] = outPREDs
-		
-		sub.to_csv('../../Inference.csv', index=True)
-		print("time: {}".format(time.time()-st))
 	 
 		# return
 #-------------------------------------------------------------------------------- 
 
-class DRGradeInferenceMax():
+class DRGradeTesterMax():
 	#--------------------------------------------------------------------------------  
 	#---- Test the trained network 
 	#---- pathDirData - path to the directory that contains images
@@ -260,12 +251,3 @@ class DRGradeInferenceMax():
 				
 				max_expert_output = np.bincount(np.array(expert_outputs))
 				final_output = np.argmax(max_expert_output)
-			
-
-			image_paths.append(path)
-			outPREDs.append(final_output)
-
-
-
-		print("time: {}".format(time.time()-st))
-
