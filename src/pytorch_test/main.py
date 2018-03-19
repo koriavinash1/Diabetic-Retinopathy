@@ -15,10 +15,12 @@ from DensenetModels import ResNet34
 from DensenetModels import ResNet18
 from DRGradeTrainer import DRGradeTrainer
 
-from inferance import DRGradeTester
+from inferance import DRGradeInferenceMaxMax, DRGradeInferenceMax
+# from DRTester import DRGradeTesterMaxMax, DRGradeTesterMax
+import pandas as pd
 
 DRGradeTrainer = DRGradeTrainer()
-DRGradeTester  = DRGradeTester()
+# DRGradeTester  = DRGradeTester()
 
 Test = False
 #-------------------------------------------------------------------------------- 
@@ -52,13 +54,8 @@ def main (nnClassCount, nnIsTrained):
 		print ("Expert model training....")
 		runTrain(expert=True, nnArchitecture=nnArchitecture)
 
-	#runTest()
-	# runTrain(expert=False)
-	# print ("Expert model training....")
-	# runTrain()
-  
-#--------------------------------------------------------------------------------   
 
+#--------------------------------------------------------------------------------   
 def runTrain(expert = True, nnArchitecture = None):
 	
 	timestampTime = time.strftime("%H%M%S")
@@ -67,8 +64,8 @@ def runTrain(expert = True, nnArchitecture = None):
 	
 	#---- Path to the directory with images
 	if not expert:
-		pathTrainData = '../../processed_data/train'
-		pathValidData = '../../processed_data/valid'
+		pathTrainData = '../../processed_data/model1/train'
+		pathValidData = '../../processed_data/model1/valid'
 		nnClassCount = nclasses
 	else: 
 		pathTrainData = '../../processed_data/expert_model/train'
@@ -80,8 +77,8 @@ def runTrain(expert = True, nnArchitecture = None):
 	nnIsTrained = True
 	
 	#---- Training settings: batch size, maximum number of epochs
-	trBatchSize = 4
-	trMaxEpoch = 50
+	trBatchSize = 15
+	trMaxEpoch = 25
 	
 	#---- Parameters related to image transforms: size of the down-scaled image, cropped image
 	imgtransResize = 256
@@ -93,40 +90,55 @@ def runTrain(expert = True, nnArchitecture = None):
 
 
 #-------------------------------------------------------------------------------- 
-
 def runTest():
 	
+	pathValidationData = '../../processed_data/validation'
 	pathTestData = '../../processed_data/test'
 	nnIsTrained = True
+	Test = False
+	MaxMax = True
+	Infer = False
 	nnClassCount = nclasses
 	trBatchSize = 1
 	imgtransResize = 256
 	imgtransCrop = 224
-	pathsModel1 = ['../../models/densenet201.csv',
-			'../../models/densenet169.csv',
-			'../../models/densenet121.csv',
-			'../../models/resnet152.csv',
-			'../../models/resnet101.csv',
-			'../../models/resnet50.csv',
-			'../../models/resnet34.csv',
-			'../../models/resnet18.csv']
 
-	pathsExpertModel = ['../../models/expert_modeldensenet201.csv',
-				'../../models/expert_modeldensenet169.csv',
-				'../../models/expert_modeldensenet121.csv',
+	pathsModel1 = [
+			'../../models/densenet201.csv',
+			'../../models/densenet169.csv',
+			#'../../models/densenet121.csv',
+			#'../../models/resnet152.csv',
+			#'../../models/resnet101.csv',
+			#'../../models/resnet50.csv',
+			#'../../models/resnet34.csv',
+			'../../models/resnet18.csv'
+		]
+
+	pathsExpertModel = [
+				#'../../models/expert_modeldensenet201.csv',
+				#'../../models/expert_modeldensenet169.csv',
+				#'../../models/expert_modeldensenet121.csv',
 				'../../models/expert_modelresnet152.csv',
-				'../../models/expert_modelresnet101.csv',
-				'../../models/expert_modelresnet50.csv',
+				#'../../models/expert_modelresnet101.csv',
+				#'../../models/expert_modelresnet50.csv',
 				'../../models/expert_modelresnet34.csv',
-				'../../models/expert_modelresnet18.csv']
-	
+				#'../../models/expert_modelresnet18.csv'
+			]
+		
 	timestampLaunch = ''
 
 	# nnArchitecture = DenseNet121(nnClassCount, nnIsTrained)
 	print ('Testing the trained model')
-	DRGradeTester.test(pathTestData, pathsModel1, pathsExpertModel, trBatchSize, imgtransResize, imgtransCrop, timestampLaunch)
+	if not Test: path = pathValidationData
+	else: path = pathTestData
+	
+	if MaxMax and not Infer: DRGradeTesterMaxMax.test(Test, path, pathsModel1, pathsExpertModel, trBatchSize, imgtransResize, imgtransCrop, timestampLaunch)
+	elif not MaxMax and not Infer: DRGradeTesterMax.test(Test, path, pathsModel1, pathsExpertModel, trBatchSize, imgtransResize, imgtransCrop, timestampLaunch)
+	elif Infer and not MaxMax: DRGradeInferenceMax.test(Test, path, pathsModel1, pathsExpertModel, trBatchSize, imgtransResize, imgtransCrop, timestampLaunch)
+	else: DRGradeInferenceMaxMax.test(Test, path, pathsModel1, pathsExpertModel, trBatchSize, imgtransResize, imgtransCrop, timestampLaunch)
+#-------------------------------------------------------------------------------- 
 #-------------------------------------------------------------------------------- 
 
 if __name__ == '__main__':	
 	main(4, True)
-	runTest()
+	# runTest()

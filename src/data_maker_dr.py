@@ -36,8 +36,9 @@ csv_path = pd.read_csv('../raw_data/IDRiD_Training Set.csv')
 image_name_list = np.array(csv_path['Image name'])
 Retinopathy_grade= np.array(csv_path['Retinopathy grade'])
 
-output_path = '../processed_data'
+output_path = '../processed_data/model1'
 if not os.path.exists(output_path):
+	os.mkdir('../processed_data')
 	os.mkdir(output_path)
 else:
 	shutil.rmtree(output_path)
@@ -142,15 +143,16 @@ for class_of_interest in [3, 4]:
 	print ('class ' + str(class_of_interest) + ' testing done')
 
 ############################################################################
-print ("expert datasetgeneration done!!.......")
+
+# print ("expert datasetgeneration done!!.......")
 # club two different classes
-# Retinopathy_grade[Retinopathy_grade == 3] = 3
+Retinopathy_grade[Retinopathy_grade == 3] = 3
 Retinopathy_grade[Retinopathy_grade == 4] = 3
 # If model predicts class 3 image is further sent to expert model
 # to classify between 3 and 4
 # create class wise split and copy data 
 
-for class_of_interest in [0,1,2,3]:
+for class_of_interest in [0, 1, 2, 3]:
 
 	modified_train_path = training_path+ '/class' + str(class_of_interest) 
 	if not os.path.exists (modified_train_path):

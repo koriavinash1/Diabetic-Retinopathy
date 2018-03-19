@@ -58,6 +58,7 @@ class DRGradeTrainer ():
 		
 		transformList = []
 		transformList.append(transforms.Resize(transResize))
+		# transformList.append(transforms.RandomCrop(transCrop))
 		transformList.append(transforms.RandomResizedCrop(transCrop))
 		transformList.append(transforms.RandomHorizontalFlip())
 		transformList.append(transforms.ToTensor())
@@ -150,7 +151,7 @@ class DRGradeTrainer ():
 		
 		model.train()
 		for batchID, (input, target, _) in tqdm(enumerate (dataLoader)):
-						
+			# print (input.shape, target.shape)
 			target = target.cuda(async = True)
 			
 			varInput = torch.autograd.Variable(input.cuda())

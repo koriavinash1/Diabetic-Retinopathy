@@ -265,11 +265,7 @@ class DRGradeInferenceMax():
 			image_paths.append(path)
 			outPREDs.append(final_output)
 
-		sub = pd.DataFrame()
-		sub['ImagePaths'] = image_paths
-		sub['predicted'] = outPREDs
-		
-		sub.to_csv('../../Inference.csv', index=True)
+
 
 		print("time: {}".format(time.time()-st))
 

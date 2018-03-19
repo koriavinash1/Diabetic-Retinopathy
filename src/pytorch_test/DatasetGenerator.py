@@ -45,9 +45,10 @@ class DatasetGenerator (Dataset):
 		imagePath = self.listImagePaths[index]
 		
 		imageData = Image.open(imagePath).convert('RGB')
-		imageLabel= torch.FloatTensor(self.listImageLabels[index])
+		try: imageLabel= torch.FloatTensor(self.listImageLabels[index])
+		except: imageLabel = None
 		
-		# print imagePath, np.array(imageData).shape
+		# print (imagePath, np.array(imageData).shape)
 		# print 
 		if self.transform != None: imageData = self.transform(imageData)
 		
