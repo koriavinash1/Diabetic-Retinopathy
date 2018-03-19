@@ -6,14 +6,16 @@ import sys
 import pandas as pd
 from tqdm import tqdm
 
-models_stats_df = pd.read_csv("../../All_models_Testing.csv")
+models_stats_df = pd.read_csv("../../Testing_PerModel_PerImage.csv")
 models = np.squeeze(models_stats_df['model_used'].as_matrix())
 models = np.unique(models)
+print (models)
 
 tps = []
 fps = []
 total = []
 tp_per = []
+"""
 for model in models:
 	print (model)
 	model_info_df = models_stats_df[models_stats_df['model_used'] == model]
@@ -36,25 +38,26 @@ sub['True_positive_percentage'] = tp_per
 
 print (sub)
 sub.to_csv('../../model_pruning.csv', index=True)
-
+"""
 
 def get_top_models(path, threshold = 0.95, total_networks = 8):
 	data = pd.read_csv(path)
 	# print (data)
-	#expert_data = data[:total_networks]
+	expert_data = data[total_networks:]
 	model1_data = data[:total_networks]
 	# print (model1_data)
 	max_tp_per_model1 = np.max(np.squeeze(model1_data['True_positive_percentage'].as_matrix()))
 	# print (max_tp_per_expert)
-	#max_tp_per_expert = np.max(np.squeeze(expert_data['True_positive_percentage'].as_matrix()))
+	max_tp_per_expert = np.max(np.squeeze(expert_data['True_positive_percentage'].as_matrix()))
 	model1 = np.squeeze(model1_data[model1_data['True_positive_percentage'] >= threshold*max_tp_per_model1]['models'].as_matrix())
-	#expert = np.squeeze(expert_data[expert_data['True_positive_percentage'] >= threshold*max_tp_per_expert]['models'].as_matrix())
-	return model1
+	expert = np.squeeze(expert_data[expert_data['True_positive_percentage'] >= threshold*max_tp_per_expert]['models'].as_matrix())
+	return model1, expert
 
 print ("#"*50)
-m = get_top_models("../../model_pruning.csv", threshold = 0.95) 
+m, e = get_top_models("../../model_pruning.csv", threshold = 0.95) 
 print ("best models to consider based are :")
 print (m)
 
-
+print ("best expert models to consider based are :")
+print (e)
 

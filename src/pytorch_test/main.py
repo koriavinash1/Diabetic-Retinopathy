@@ -16,11 +16,11 @@ from DensenetModels import ResNet18
 from DRGradeTrainer import DRGradeTrainer
 
 from inferance import DRGradeInferenceMaxMax, DRGradeInferenceMax
-# from DRTester import DRGradeTesterMaxMax, DRGradeTesterMax
+from DRTester import DRGradeTesterMaxMax, DRGradeTesterMax
 import pandas as pd
 
 DRGradeTrainer = DRGradeTrainer()
-# DRGradeTester  = DRGradeTester()
+DRGradeTesterMaxMax, DRGradeTesterMax  = DRGradeTesterMaxMax(), DRGradeTesterMax()
 
 Test = False
 #-------------------------------------------------------------------------------- 
@@ -95,7 +95,7 @@ def runTest():
 	pathValidationData = '../../processed_data/validation'
 	pathTestData = '../../processed_data/test'
 	nnIsTrained = True
-	Test = False
+	Test = True
 	MaxMax = True
 	Infer = False
 	nnClassCount = nclasses
@@ -105,22 +105,22 @@ def runTest():
 
 	pathsModel1 = [
 			'../../models/densenet201.csv',
-			'../../models/densenet169.csv',
+			#'../../models/densenet169.csv',
 			#'../../models/densenet121.csv',
 			#'../../models/resnet152.csv',
 			#'../../models/resnet101.csv',
 			#'../../models/resnet50.csv',
 			#'../../models/resnet34.csv',
-			'../../models/resnet18.csv'
+			#'../../models/resnet18.csv'
 		]
 
 	pathsExpertModel = [
-				#'../../models/expert_modeldensenet201.csv',
-				#'../../models/expert_modeldensenet169.csv',
-				#'../../models/expert_modeldensenet121.csv',
-				'../../models/expert_modelresnet152.csv',
+				'../../models/expert_modeldensenet201.csv',
+				'../../models/expert_modeldensenet169.csv',
+				'../../models/expert_modeldensenet121.csv',
+				#'../../models/expert_modelresnet152.csv',
 				#'../../models/expert_modelresnet101.csv',
-				#'../../models/expert_modelresnet50.csv',
+				'../../models/expert_modelresnet50.csv',
 				'../../models/expert_modelresnet34.csv',
 				#'../../models/expert_modelresnet18.csv'
 			]
@@ -137,8 +137,7 @@ def runTest():
 	elif Infer and not MaxMax: DRGradeInferenceMax.test(Test, path, pathsModel1, pathsExpertModel, trBatchSize, imgtransResize, imgtransCrop, timestampLaunch)
 	else: DRGradeInferenceMaxMax.test(Test, path, pathsModel1, pathsExpertModel, trBatchSize, imgtransResize, imgtransCrop, timestampLaunch)
 #-------------------------------------------------------------------------------- 
-#-------------------------------------------------------------------------------- 
 
 if __name__ == '__main__':	
-	main(4, True)
-	# runTest()
+	# main(4, True)
+	runTest()
