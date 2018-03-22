@@ -55,8 +55,8 @@ class DRGradeTesterMaxMax():
 			name = timestamp[index] + "-" + arch[index]
 		except: 
 			name = timestamp + "-" + arch
-		if not expert: path = '../../models/m-' + name + '.pth.tar'
-		else : path = '../../models/expert-m-' + name + '.pth.tar'
+		if not expert: path = '../../models/IMAGENET_stat_m-' + name + '.pth.tar'
+		else : path = '../../models/IMAGENET_stat_expert-m-' + name + '.pth.tar'
 
 		return path
 	
@@ -67,14 +67,15 @@ class DRGradeTesterMaxMax():
 	def test (self, Test, pathTestData, pathsModel1, pathsExpertmodel, trBatchSize, transResize, transCrop, launchTimeStamp):
 		
 		#-------------------- SETTINGS: DATA TRANSFORMS, TEN CROPS
-		normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-		
+		IRID_normalize = transforms.Normalize([0.511742964836, 0.243537961753, 0.0797484182405], [0.223165616204, 0.118469339976, 0.0464971614141])
+		IMAGENET_normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+
 		#-------------------- SETTINGS: DATASET BUILDERS
 		transformList = []
 		transformList.append(transforms.Resize(transResize))
 		transformList.append(transforms.TenCrop(transCrop))
 		transformList.append(transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])))
-		transformList.append(transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops])))
+		# transformList.append(transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops])))
 		transformSequence=transforms.Compose(transformList)
 		
 		datasetTest = DatasetGenerator(pathImageDirectory=pathTestData, transform=transformSequence)
@@ -99,10 +100,27 @@ class DRGradeTesterMaxMax():
 
 			target = target.cuda()
 			bs, n_crops, c, h, w = input.size()
-			varInput = torch.autograd.Variable(input.view(-1, c, h, w).cuda(), volatile=True)
-
+			
 			max_model1 = []
 			for pathModel in pathsModel1:
+				if pathModel.__contains__('IRID_stat'): 
+					input = transforms.Lambda(lambda crops: torch.stack([IRID_normalize(crop) for crop in crops]))
+					#### added by varghese ALEX
+					norm_trans= transforms.Normalize([0.511742964836, 0.243537961753, 0.0797484182405], [0.223165616204, 0.118469339976, 0.0464971614141])
+
+					normalized_input = norm_trans(input)
+
+
+
+				else: 
+					input = transforms.Lambda(lambda crops: torch.stack([IMAGENET_normalize(crop) for crop in crops]))
+					### Added by Varghese 
+					norm_trans= transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+
+					normalized_input = norm_trans(input)
+
+				varInput = torch.autograd.Variable(input.view(-1, c, h, w).cuda(), volatile=True)
+
 				best_model_path = self.get_best_model_path(pathModel, expert=False)
 				print (best_model_path)
 				model = torch.load(best_model_path)
@@ -187,15 +205,15 @@ class DRGradeTesterMaxMax():
 		sub.to_csv('../../Testing.csv', index=True)
 		
 
-
-		# per image per model csv....
-		sub = pd.DataFrame()
-		sub['path'] = _image_paths
-		sub['actual'] = _outGTs
-		sub['predicted'] = _outPREDs
-		sub['model_used'] = _mused
+		if not Test:
+			# per image per model csv....
+			sub = pd.DataFrame()
+			sub['path'] = _image_paths
+			sub['actual'] = _outGTs
+			sub['predicted'] = _outPREDs
+			sub['model_used'] = _mused
 		
-		sub.to_csv('../../Testing_PerModel_PerImage.csv', index=True)
+			sub.to_csv('../../Testing_PerModel_PerImage.csv', index=True)
 		
 		print ("Final Accuracy: {}".format(self.accuracy(outPREDs, outGTs)))
 	
@@ -363,14 +381,15 @@ class DRGradeTesterMax():
 		
 		sub.to_csv('../../Testing.csv', index=True)
 
-
-		# per image per model csv....
-		sub = pd.DataFrame()
-		sub['path'] = _image_paths
-		sub['actual'] = _outGTs
-		sub['predicted'] = _outPREDs
-		sub['model_used'] = _mused
 		
-		sub.to_csv('../../Testing_PerModel_PerImage.csv', index=True)
+		if not Test:
+			# per image per model csv....
+			sub = pd.DataFrame()
+			sub['path'] = _image_paths
+			sub['actual'] = _outGTs
+			sub['predicted'] = _outPREDs
+			sub['model_used'] = _mused
+		
+			sub.to_csv('../../Testing_PerModel_PerImage.csv', index=True)
 
 		print ("Final Accuracy: {}".format(self.accuracy(outPREDs, outGTs)))

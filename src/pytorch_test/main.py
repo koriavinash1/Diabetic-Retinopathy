@@ -6,6 +6,7 @@ import sys
 
 from DensenetModels import DenseNet121
 from DensenetModels import DenseNet169
+from DensenetModels import DenseNet161
 from DensenetModels import DenseNet201
 
 from DensenetModels import ResNet152
@@ -22,14 +23,14 @@ import pandas as pd
 DRGradeTrainer = DRGradeTrainer()
 DRGradeTesterMaxMax, DRGradeTesterMax  = DRGradeTesterMaxMax(), DRGradeTesterMax()
 
-Test = False
 #-------------------------------------------------------------------------------- 
 nclasses = 4
 nclasses_expert = 2
-def main (nnClassCount, nnIsTrained):
+def main (nnClassCount, nnIsTrained, IRID_stats=True):
 	nnClassCount = nclasses
 	nnArchitectureList = [{'name': 'densenet201', 'model' : DenseNet201(nnClassCount, nnIsTrained)}, 
-			{'name': 'densenet169', 'model' : DenseNet169(nnClassCount, nnIsTrained)}, 
+			{'name': 'densenet169', 'model' : DenseNet169(nnClassCount, nnIsTrained)},
+			{'name': 'densenet161', 'model' : DenseNet161(nnClassCount, nnIsTrained)}, 
 			{'name': 'densenet121', 'model': DenseNet121(nnClassCount, nnIsTrained)}, 
 			{'name': 'resnet152', 'model': ResNet152(nnClassCount, nnIsTrained)},
 			{'name': 'resnet101', 'model': ResNet101(nnClassCount, nnIsTrained)}, 
@@ -38,11 +39,12 @@ def main (nnClassCount, nnIsTrained):
 			{'name': 'resnet18', 'model': ResNet18(nnClassCount, nnIsTrained)}]
 	#runTest()
 	for nnArchitecture in nnArchitectureList:
-		runTrain(expert=False, nnArchitecture=nnArchitecture)
+		runTrain(expert=False, nnArchitecture=nnArchitecture, IRID_stats=IRID_stats)
 
 	nnClassCount = nclasses_expert
 	nnArchitectureList = [{'name': 'densenet201', 'model' : DenseNet201(nnClassCount, nnIsTrained)}, 
 			{'name': 'densenet169', 'model' : DenseNet169(nnClassCount, nnIsTrained)}, 
+			{'name': 'densenet161', 'model' : DenseNet161(nnClassCount, nnIsTrained)}, 
 			{'name': 'densenet121', 'model': DenseNet121(nnClassCount, nnIsTrained)}, 
 			{'name': 'resnet152', 'model': ResNet152(nnClassCount, nnIsTrained)},
 			{'name': 'resnet101', 'model': ResNet101(nnClassCount, nnIsTrained)}, 
@@ -52,11 +54,11 @@ def main (nnClassCount, nnIsTrained):
 
 	for nnArchitecture in nnArchitectureList:
 		print ("Expert model training....")
-		runTrain(expert=True, nnArchitecture=nnArchitecture)
+		runTrain(expert=True, nnArchitecture=nnArchitecture, IRID_stats=IRID_stats)
 
 
 #--------------------------------------------------------------------------------   
-def runTrain(expert = True, nnArchitecture = None):
+def runTrain(expert = True, nnArchitecture = None, IRID_stats=True):
 	
 	timestampTime = time.strftime("%H%M%S")
 	timestampDate = time.strftime("%d%m%Y")
@@ -77,7 +79,7 @@ def runTrain(expert = True, nnArchitecture = None):
 	nnIsTrained = True
 	
 	#---- Training settings: batch size, maximum number of epochs
-	trBatchSize = 15
+	trBatchSize = 16
 	trMaxEpoch = 25
 	
 	#---- Parameters related to image transforms: size of the down-scaled image, cropped image
@@ -86,13 +88,13 @@ def runTrain(expert = True, nnArchitecture = None):
 	
 	print ('Training NN architecture = ', nnArchitecture)
 
-	DRGradeTrainer.train(pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, imgtransResize, imgtransCrop, timestampLaunch, None, expert)
+	DRGradeTrainer.train(pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, imgtransResize, imgtransCrop, timestampLaunch, None, expert, IRID_stats)
 
 
 #-------------------------------------------------------------------------------- 
 def runTest():
 	
-	pathValidationData = '../../processed_data/validation'
+	pathValidationData = '../../processed_data/train'
 	pathTestData = '../../processed_data/test'
 	nnIsTrained = True
 	Test = True
@@ -104,25 +106,47 @@ def runTest():
 	imgtransCrop = 224
 
 	pathsModel1 = [
-			'../../models/densenet201.csv',
-			#'../../models/densenet169.csv',
-			#'../../models/densenet121.csv',
-			#'../../models/resnet152.csv',
-			#'../../models/resnet101.csv',
-			#'../../models/resnet50.csv',
-			#'../../models/resnet34.csv',
-			#'../../models/resnet18.csv'
+			'../../models/IMAGENET_stat_densenet201.csv',
+			'../../models/IMAGENET_stat_densenet169.csv',
+			'../../models/IMAGENET_stat_densenet161.csv',
+			'../../models/IMAGENET_stat_densenet121.csv',
+			'../../models/IMAGENET_stat_resnet152.csv',
+			'../../models/IMAGENET_stat_resnet101.csv',
+			'../../models/IMAGENET_stat_resnet50.csv',
+			'../../models/IMAGENET_stat_resnet34.csv',
+			'../../models/IMAGENET_stat_resnet18.csv'
+
+			#'../../models/IDRID_stat_densenet201.csv',
+			#'../../models/IDRID_stat_densenet169.csv',
+			#'../../models/IDRID_stat_densenet161.csv',
+			#'../../models/IDRID_stat_densenet121.csv',
+			#'../../models/IDRID_stat_resnet152.csv',
+			#'../../models/IDRID_stat_resnet101.csv',
+			#'../../models/IDRID_stat_resnet50.csv',
+			#'../../models/IDRID_stat_resnet34.csv',
+			#'../../models/IDRID_stat_resnet18.csv'
 		]
 
 	pathsExpertModel = [
-				'../../models/expert_modeldensenet201.csv',
-				'../../models/expert_modeldensenet169.csv',
-				'../../models/expert_modeldensenet121.csv',
-				#'../../models/expert_modelresnet152.csv',
-				#'../../models/expert_modelresnet101.csv',
-				'../../models/expert_modelresnet50.csv',
-				'../../models/expert_modelresnet34.csv',
-				#'../../models/expert_modelresnet18.csv'
+				'../../models/IMAGENET_stat_expert_modeldensenet201.csv',
+				'../../models/IMAGENET_stat_expert_modeldensenet169.csv',
+				'../../models/IMAGENET_stat_expert_modeldensenet161.csv',
+				'../../models/IMAGENET_stat_expert_modeldensenet121.csv',
+				'../../models/IMAGENET_stat_expert_modelresnet152.csv',
+				'../../models/IMAGENET_stat_expert_modelresnet101.csv',
+				'../../models/IMAGENET_stat_expert_modelresnet50.csv',
+				'../../models/IMAGENET_stat_expert_modelresnet34.csv',
+				'../../models/IMAGENET_stat_expert_modelresnet18.csv'
+
+				#'../../models/IDRID_stat_expert_modeldensenet201.csv',
+				#'../../models/IDRID_stat_expert_modeldensenet169.csv',
+				#'../../models/IDRID_stat_expert_modeldensenet161.csv',
+				#'../../models/IDRID_stat_expert_modeldensenet121.csv',
+				#'../../models/IDRID_stat_expert_modelresnet152.csv',
+				#'../../models/IDRID_stat_expert_modelresnet101.csv',
+				#'../../models/IDRID_stat_expert_modelresnet50.csv',
+				#'../../models/IDRID_stat_expert_modelresnet34.csv',
+				#'../../models/IDRID_stat_expert_modelresnet18.csv'
 			]
 		
 	timestampLaunch = ''
@@ -139,5 +163,6 @@ def runTest():
 #-------------------------------------------------------------------------------- 
 
 if __name__ == '__main__':	
-	# main(4, True)
-	runTest()
+	main(4, True, IRID_stats = True)
+	main(4, True, IRID_stats = False) # IMAGENET_stats
+	# runTest()

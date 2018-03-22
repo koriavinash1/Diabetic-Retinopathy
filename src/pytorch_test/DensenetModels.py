@@ -44,6 +44,22 @@ class DenseNet169(nn.Module):
 	def forward (self, x):
 		x = self.densenet169(x)
 		return x
+
+class DenseNet161(nn.Module):
+	
+	def __init__(self, classCount, isTrained):
+		
+		super(DenseNet161, self).__init__()
+		model_urls['densenet161'] = model_urls['densenet161'].replace('https://', 'http://')
+		self.densenet161 = torchvision.models.densenet161(pretrained=isTrained)
+		
+		kernelCount = self.densenet161.classifier.in_features
+		
+		self.densenet161.classifier = nn.Sequential(nn.Linear(kernelCount, classCount), nn.Sigmoid())
+		
+	def forward (self, x):
+		x = self.densenet161(x)
+		return x
 	
 class DenseNet201(nn.Module):
 	

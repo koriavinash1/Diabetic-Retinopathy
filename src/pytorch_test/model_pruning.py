@@ -15,7 +15,7 @@ tps = []
 fps = []
 total = []
 tp_per = []
-"""
+
 for model in models:
 	print (model)
 	model_info_df = models_stats_df[models_stats_df['model_used'] == model]
@@ -38,13 +38,13 @@ sub['True_positive_percentage'] = tp_per
 
 print (sub)
 sub.to_csv('../../model_pruning.csv', index=True)
-"""
+
 
 def get_top_models(path, threshold = 0.95, total_networks = 8):
 	data = pd.read_csv(path)
 	# print (data)
-	expert_data = data[total_networks:]
-	model1_data = data[:total_networks]
+	expert_data = data[[str.__contains__('expert') for str in data['models'].as_matrix()]]
+	model1_data = data[[not str.__contains__('expert') for str in data['models'].as_matrix()]]
 	# print (model1_data)
 	max_tp_per_model1 = np.max(np.squeeze(model1_data['True_positive_percentage'].as_matrix()))
 	# print (max_tp_per_expert)

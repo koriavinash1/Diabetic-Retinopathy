@@ -45,7 +45,7 @@ class DRGradeTrainer ():
 	#---- launchTimestamp - date/time, used to assign unique name for the checkpoint file
 	#---- checkpoint - if not None loads the model and continues training
 	
-	def train (self, pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, transResize, transCrop, launchTimestamp, checkpoint, expert = False):
+	def train (self, pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, transResize, transCrop, launchTimestamp, checkpoint, expert = False, IRID_stats = True):
 
 		
 		#-------------------- SETTINGS: NETWORK ARCHITECTURE
@@ -54,7 +54,12 @@ class DRGradeTrainer ():
 		model = torch.nn.DataParallel(model)
 				
 		#-------------------- SETTINGS: DATA TRANSFORMS
-		normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+		if IRID_stats: 
+			normalize = transforms.Normalize([0.511742964836, 0.243537961753, 0.0797484182405], [0.223165616204, 0.118469339976, 0.0464971614141])
+			stat = 'IRID_stat_'
+		else: 
+			normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+			stat = 'IMAGENET_stat_'
 		
 		transformList = []
 		transformList.append(transforms.Resize(transResize))
@@ -74,7 +79,7 @@ class DRGradeTrainer ():
 		
 		# print len(dataLoaderTrain), len(datasetTrain)
 		#-------------------- SETTINGS: OPTIMIZER & SCHEDULER
-		optimizer = optim.Adam (model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
+		optimizer = optim.Adam (model.parameters(),  lr=0.0001, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
 		scheduler = ReduceLROnPlateau(optimizer, factor = 0.1, patience = 5, mode = 'min')
 				
 		#-------------------- SETTINGS: LOSS
@@ -84,13 +89,14 @@ class DRGradeTrainer ():
 		#---- Load checkpoint 
 		if checkpoint != None:
 			modelCheckpoint = torch.load(checkpoint)
-			model.load_state_dict(modelCheckpoint['state_dict'])
-			optimizer.load_state_dict(modelCheckpoint['optimizer'])
+			# model.load_state_dict(modelCheckpoint['state_dict'])
+			# optimizer.load_state_dict(modelCheckpoint['optimizer'])
 
 		
 		#---- TRAIN THE NETWORK
 		
 		lossMIN = 100000
+		accMax = 0
 		sub = pd.DataFrame()
 
 		timestamps = []
@@ -105,7 +111,7 @@ class DRGradeTrainer ():
 			
 			print (str(epochID)+"/" + str(trMaxEpoch) + "---")
 			self.epochTrain (model, dataLoaderTrain, optimizer, scheduler, trMaxEpoch, nnClassCount, loss, trBatchSize)
-			lossVal, losstensor, acc = self.epochVal (model, dataLoaderVal, optimizer, scheduler, trMaxEpoch, nnClassCount, loss, trBatchSize)
+			lossVal, losstensor, accVal = self.epochVal (model, dataLoaderVal, optimizer, scheduler, trMaxEpoch, nnClassCount, loss, trBatchSize)
 			
 			timestampTime = time.strftime("%H%M%S")
 			timestampDate = time.strftime("%d%m%Y")
@@ -113,27 +119,29 @@ class DRGradeTrainer ():
 			
 			scheduler.step(losstensor.data[0])
 			
-			if lossVal < lossMIN:
-				lossMIN = lossVal
+			if accVal > accMax:
+				# lossMIN = lossVal
+				accMax = accVal
 				timestamps.append(launchTimestamp)
 				archs.append(nnArchitecture['name'])
-				losses.append(lossMIN)
-				accs.append(acc)
-				if not expert: model_name = '../../models/m-' + launchTimestamp + "-"+ nnArchitecture['name'] + '.pth.tar'
-				else : model_name = '../../models/expert-m-' + launchTimestamp + "-" + nnArchitecture['name'] + '.pth.tar'
+				losses.append(lossVal)
+				accs.append(accVal)
+				# launchTimestamp
+				if not expert: model_name = '../../models/' + stat + 'm-'+ nnArchitecture['name'] + '.pth.tar'
+				else : model_name = '../../models/'+ stat +'expert-m-' + nnArchitecture['name'] + '.pth.tar'
 
 				torch.save(model, model_name)
-				print ('Epoch [' + str(epochID + 1) + '] [save] [' + launchTimestamp + '] loss= ' + str(lossVal) + ' accuracy= ' + str(acc))
+				print ('Epoch [' + str(epochID + 1) + '] [save] [' + launchTimestamp + '] loss= ' + str(lossVal) + ' accuracy= ' + str(accVal))
 				# print confusion_meter
 			else:
-				print ('Epoch [' + str(epochID + 1) + '] [----] [' + launchTimestamp + '] loss= ' + str(lossVal) + ' accuracy= ' + str(acc))
+				print ('Epoch [' + str(epochID + 1) + '] [----] [' + launchTimestamp + '] loss= ' + str(lossVal) + ' accuracy= ' + str(accVal))
 		sub['timestamp'] = timestamps
 		sub['archs'] = archs
 		sub['loss'] = losses
 		sub['acc'] = accs
 
-		if not expert: sub.to_csv('../../models/' + nnArchitecture['name'] + '.csv', index=True)
-		else: sub.to_csv('../../models/' + 'expert_model' + nnArchitecture['name'] + '.csv', index=True)
+		if not expert: sub.to_csv('../../models/'+ stat + nnArchitecture['name'] + '.csv', index=True)
+		else: sub.to_csv('../../models/'+ stat + 'expert_model' + nnArchitecture['name'] + '.csv', index=True)
 		
 					 
 	#-------------------------------------------------------------------------------- 
@@ -148,7 +156,7 @@ class DRGradeTrainer ():
 
 	#--------------------------------------------------------------------------------
 	def epochTrain (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, loss, trBatchSize):
-		
+
 		model.train()
 		for batchID, (input, target, _) in tqdm(enumerate (dataLoader)):
 			# print (input.shape, target.shape)
@@ -159,11 +167,7 @@ class DRGradeTrainer ():
 			varOutput = model(varInput)
 
 			lossvalue = loss(varOutput, varTarget)
-			# for crossentropy loss
-			# varTarget = torch.max(varOutput, 1)[1]
-			# varOutput = torch.max(varOutput, 1)[1]
-			# lossvalue = loss(varOutput, varTarget)
-			# print "BatchID: {}".format(batchID) + " loss :{}".format(lossvalue.data)		   
+	   
 			optimizer.zero_grad()
 			lossvalue.backward()
 			optimizer.step()
@@ -191,11 +195,6 @@ class DRGradeTrainer ():
 			
 			acc += self.accuracy(varOutput, varTarget)/ (len(dataLoader)*trBatchSize)
 			losstensor = loss(varOutput, varTarget)
-			
-			# for crossentropy loss
-			# varTarget = torch.max(varOutput, 1)[1]
-			# varOutput = torch.max(varOutput, 1)[1]
-			# losstensor= loss(varOutput, varTarget)
 
 			losstensorMean += losstensor
 			# confusion_meter.add(varOutput.view(-1), varTarget.data.view(-1))
