@@ -36,7 +36,6 @@ class DRGradeTrainer ():
 	#---- pathTrainData - path to the directory that contains images
 	#---- pathValidData - path to the file that contains image paths and label pairs (training set)
 	#---- nnArchitecture - model architecture 'DENSE-NET-121', 'DENSE-NET-169' or 'DENSE-NET-201'
-	#---- nnIsTrained - if True, uses pre-trained version of the network (pre-trained on imagenet)
 	#---- nnClassCount - number of output classes 
 	#---- trBatchSize - batch size
 	#---- trMaxEpoch - number of epochs
@@ -45,7 +44,7 @@ class DRGradeTrainer ():
 	#---- launchTimestamp - date/time, used to assign unique name for the checkpoint file
 	#---- checkpoint - if not None loads the model and continues training
 	
-	def train (self, pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, transResize, transCrop, launchTimestamp, checkpoint, expert = False, IRID_stats = True):
+	def train (self, pathTrainData, pathValidData, nnArchitecture, nnClassCount, trBatchSize, trMaxEpoch, transResize, transCrop, launchTimestamp, checkpoint, expert = False, IRID_stats = True):
 
 		
 		#-------------------- SETTINGS: NETWORK ARCHITECTURE

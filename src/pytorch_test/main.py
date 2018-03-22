@@ -74,13 +74,9 @@ def runTrain(expert = True, nnArchitecture = None, IRID_stats=True):
 		pathValidData = '../../processed_data/expert_model/valid'
 		nnClassCount = nclasses_expert
 	
-	#---- Neural network parameters: type of the network, is it pre-trained 
-	#---- on imagenet, number of classes
-	nnIsTrained = True
-	
 	#---- Training settings: batch size, maximum number of epochs
-	trBatchSize = 16
-	trMaxEpoch = 25
+	trBatchSize = 4
+	trMaxEpoch = 30
 	
 	#---- Parameters related to image transforms: size of the down-scaled image, cropped image
 	imgtransResize = 256
@@ -88,7 +84,7 @@ def runTrain(expert = True, nnArchitecture = None, IRID_stats=True):
 	
 	print ('Training NN architecture = ', nnArchitecture)
 
-	DRGradeTrainer.train(pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, imgtransResize, imgtransCrop, timestampLaunch, None, expert, IRID_stats)
+	DRGradeTrainer.train(pathTrainData, pathValidData, nnArchitecture, nnClassCount, trBatchSize, trMaxEpoch, imgtransResize, imgtransCrop, timestampLaunch, None, expert, IRID_stats)
 
 
 #-------------------------------------------------------------------------------- 
