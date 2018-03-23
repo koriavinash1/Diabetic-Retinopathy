@@ -20,25 +20,25 @@ primay_a and expert_a: these were models that were picked by finding the model w
 Based on results on test data, primary and expert gave a result of 82.14
 
 
-14 0 1 0 0
-2 10 0 0 0
-1 0 11 2 0
-0 0  1 8 0
-0 0 1  2 3
++ 14 0 1 0 0
++ 2 10 0 0 0
++ 1 0 11 2 0
++ 0 0  1 8 0
++ 0 0 1  2 3
 
 
 while using primary_a and expert_a gave:
 
-13 0 2 0 0
-2 10 0 0 0
-2 0 10 2 0
-0 0 1  8 0
-0 0 1  0 5 
++ 13 0 2 0 0
++ 2 10 0 0 0
++ 2 0 10 2 0
++ 0 0 1  8 0
++ 0 0 1  0 5 
 
 Based on avinash comment we used primary and expert_a
-14 0 1 0 0
-2 10 0 0 0
-1 0 11 2 0
-0 0  1 8 0
-0 0 1  0 5 
++ 14 0 1 0 0
++ 2 10 0 0 0
++ 1 0 11 2 0
++ 0 0  1 8 0
++ 0 0 1  0 5 
 
