@@ -272,3 +272,4 @@ class DRGradeInferenceMax():
 		sub.to_csv('../../Inference.csv', index=True)
 
 		print("time: {}".format(time.time()-st))
+

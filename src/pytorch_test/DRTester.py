@@ -70,17 +70,27 @@ class DRGradeTesterMaxMax():
 		IRID_normalize = transforms.Normalize([0.511742964836, 0.243537961753, 0.0797484182405], [0.223165616204, 0.118469339976, 0.0464971614141])
 		IMAGENET_normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 
+		#---------------------custom transforms
+		transformListIRID = []
+		transformListIMAGENET = []
+
+		transformListIRID.append(transforms.ToPILImage())
+		transformListIRID.append(transforms.Resize(256))
+		transformListIRID.append(transforms.TenCrop(224))
+		transformListIRID.append(transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])))
+		transformListIRID.append(transforms.Lambda(lambda crops: torch.stack([IRID_normalize(crop) for crop in crops])))
+		transformIRID=transforms.Compose(transformListIRID)
+
+		# transformListIMAGENET.append(transforms.ToPILImage())
+		transformListIMAGENET.append(transforms.Resize(256))
+		transformListIMAGENET.append(transforms.TenCrop(224))
+		transformListIMAGENET.append(transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])))
+		transformListIMAGENET.append(transforms.Lambda(lambda crops: torch.stack([IMAGENET_normalize(crop) for crop in crops])))
+		transformIMAGENET = transforms.Compose(transformListIMAGENET)
+
 		#-------------------- SETTINGS: DATASET BUILDERS
-		transformList = []
-		transformList.append(transforms.Resize(transResize))
-		transformList.append(transforms.TenCrop(transCrop))
-		transformList.append(transforms.Lambda(lambda crops: torch.stack([transforms.ToTensor()(crop) for crop in crops])))
-		# transformList.append(transforms.Lambda(lambda crops: torch.stack([normalize(crop) for crop in crops])))
-		transformSequence=transforms.Compose(transformList)
-		
-		datasetTest = DatasetGenerator(pathImageDirectory=pathTestData, transform=transformSequence)
+		datasetTest = DatasetGenerator(pathImageDirectory=pathTestData, transform=None)
 		dataLoaderTest = DataLoader(dataset=datasetTest, batch_size=1, num_workers=8, shuffle=False, pin_memory=False)
-		
 
 		# results per image per model
 		_outGTs= torch.FloatTensor().cuda()
@@ -95,33 +105,23 @@ class DRGradeTesterMaxMax():
 
 		
 		st = time.time() 
-		for i, (input, target, path) in enumerate(dataLoaderTest):
+		for i, (imgs, target, path) in enumerate(dataLoaderTest):
 			print (path)
 
 			target = target.cuda()
-			bs, n_crops, c, h, w = input.size()
 			
 			max_model1 = []
 			for pathModel in pathsModel1:
-				if pathModel.__contains__('IRID_stat'): 
-					input = transforms.Lambda(lambda crops: torch.stack([IRID_normalize(crop) for crop in crops]))
-					#### added by varghese ALEX
-					norm_trans= transforms.Normalize([0.511742964836, 0.243537961753, 0.0797484182405], [0.223165616204, 0.118469339976, 0.0464971614141])
 
-					normalized_input = norm_trans(input)
+				#if not pathModel.__contains__('IRID_stat'): input = transformIRID(imgs.squeeze()).unsqueeze(0)
+				#else: input = transformIMAGENET(imgs.squeeze()).unsqueeze(0)
+				input = transformIRID(imgs.squeeze()).unsqueeze(0)
 
-
-
-				else: 
-					input = transforms.Lambda(lambda crops: torch.stack([IMAGENET_normalize(crop) for crop in crops]))
-					### Added by Varghese 
-					norm_trans= transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-
-					normalized_input = norm_trans(input)
-
+				bs, n_crops, c, h, w = input.size()
 				varInput = torch.autograd.Variable(input.view(-1, c, h, w).cuda(), volatile=True)
 
-				best_model_path = self.get_best_model_path(pathModel, expert=False)
+				# best_model_path = self.get_best_model_path(pathModel, expert=False)
+				best_model_path = pathModel
 				print (best_model_path)
 				model = torch.load(best_model_path)
 
@@ -150,9 +150,11 @@ class DRGradeTesterMaxMax():
 			final_output = np.argmax(max_primary_output)
 
 			if final_output == 3:
+				# print ('entered here')
 				max_expert = []
 				for pathExpertModel in pathsExpertmodel:
-					best_model_path = self.get_best_model_path(pathExpertModel, expert=True)
+					# best_model_path = self.get_best_model_path(pathExpertModel, expert=True)
+					best_model_path = pathExpertModel
 					print (best_model_path)
 					del model
 					model = torch.load(best_model_path)

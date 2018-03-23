@@ -74,9 +74,13 @@ def runTrain(expert = True, nnArchitecture = None, IRID_stats=True):
 		pathValidData = '../../processed_data/expert_model/valid'
 		nnClassCount = nclasses_expert
 	
+	#---- Neural network parameters: type of the network, is it pre-trained 
+	#---- on imagenet, number of classes
+	nnIsTrained = True
+	
 	#---- Training settings: batch size, maximum number of epochs
-	trBatchSize = 4
-	trMaxEpoch = 30
+	trBatchSize = 16
+	trMaxEpoch = 25
 	
 	#---- Parameters related to image transforms: size of the down-scaled image, cropped image
 	imgtransResize = 256
@@ -84,7 +88,7 @@ def runTrain(expert = True, nnArchitecture = None, IRID_stats=True):
 	
 	print ('Training NN architecture = ', nnArchitecture)
 
-	DRGradeTrainer.train(pathTrainData, pathValidData, nnArchitecture, nnClassCount, trBatchSize, trMaxEpoch, imgtransResize, imgtransCrop, timestampLaunch, None, expert, IRID_stats)
+	DRGradeTrainer.train(pathTrainData, pathValidData, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, imgtransResize, imgtransCrop, timestampLaunch, None, expert, IRID_stats)
 
 
 #-------------------------------------------------------------------------------- 
@@ -102,47 +106,47 @@ def runTest():
 	imgtransCrop = 224
 
 	pathsModel1 = [
-			'../../models/IMAGENET_stat_densenet201.csv',
-			'../../models/IMAGENET_stat_densenet169.csv',
-			'../../models/IMAGENET_stat_densenet161.csv',
-			'../../models/IMAGENET_stat_densenet121.csv',
-			'../../models/IMAGENET_stat_resnet152.csv',
-			'../../models/IMAGENET_stat_resnet101.csv',
-			'../../models/IMAGENET_stat_resnet50.csv',
-			'../../models/IMAGENET_stat_resnet34.csv',
-			'../../models/IMAGENET_stat_resnet18.csv'
-
-			#'../../models/IDRID_stat_densenet201.csv',
-			#'../../models/IDRID_stat_densenet169.csv',
-			#'../../models/IDRID_stat_densenet161.csv',
-			#'../../models/IDRID_stat_densenet121.csv',
-			#'../../models/IDRID_stat_resnet152.csv',
-			#'../../models/IDRID_stat_resnet101.csv',
-			#'../../models/IDRID_stat_resnet50.csv',
-			#'../../models/IDRID_stat_resnet34.csv',
-			#'../../models/IDRID_stat_resnet18.csv'
+			# '../../models/IMAGENET_stat_m-densenet201.pth.tar',
+			# '../../models/IMAGENET_stat_m-densenet169.pth.tar',
+			# '../../models/IMAGENET_stat_m-densenet161.pth.tar',
+			# '../../models/IMAGENET_stat_m-densenet121.pth.tar',
+			# '../../models/IMAGENET_stat_m-resnet152.pth.tar',
+			# '../../models/IMAGENET_stat_m-resnet101.pth.tar',
+			# '../../models/IMAGENET_stat_m-resnet50.pth.tar',
+			# '../../models/IMAGENET_stat_m-resnet34.pth.tar',
+			# '../../models/IMAGENET_stat_m-resnet18.pth.tar',
+		
+			'../../models/IRID_stat_m-densenet201.pth.tar',
+			'../../models/IRID_stat_m-densenet169.pth.tar',
+			'../../models/IRID_stat_m-densenet161.pth.tar',
+			'../../models/IRID_stat_m-densenet121.pth.tar',
+			'../../models/IRID_stat_m-resnet152.pth.tar',
+			'../../models/IRID_stat_m-resnet101.pth.tar',
+			'../../models/IRID_stat_m-resnet50.pth.tar',
+			'../../models/IRID_stat_m-resnet34.pth.tar',
+			'../../models/IRID_stat_m-resnet18.pth.tar'
 		]
 
 	pathsExpertModel = [
-				'../../models/IMAGENET_stat_expert_modeldensenet201.csv',
-				'../../models/IMAGENET_stat_expert_modeldensenet169.csv',
-				'../../models/IMAGENET_stat_expert_modeldensenet161.csv',
-				'../../models/IMAGENET_stat_expert_modeldensenet121.csv',
-				'../../models/IMAGENET_stat_expert_modelresnet152.csv',
-				'../../models/IMAGENET_stat_expert_modelresnet101.csv',
-				'../../models/IMAGENET_stat_expert_modelresnet50.csv',
-				'../../models/IMAGENET_stat_expert_modelresnet34.csv',
-				'../../models/IMAGENET_stat_expert_modelresnet18.csv'
+				# '../../models/IMAGENET_stat_expert-m-densenet201.pth.tar',
+				# '../../models/IMAGENET_stat_expert-m-densenet169.pth.tar',
+				# '../../models/IMAGENET_stat_expert-m-densenet161.pth.tar',
+				# '../../models/IMAGENET_stat_expert-m-densenet121.pth.tar',
+				# '../../models/IMAGENET_stat_expert-m-resnet152.pth.tar',
+				# '../../models/IMAGENET_stat_expert-m-resnet101.pth.tar',
+				# '../../models/IMAGENET_stat_expert-m-resnet50.pth.tar',
+				# '../../models/IMAGENET_stat_expert-m-resnet34.pth.tar',
+				# '../../models/IMAGENET_stat_expert-m-resnet18.pth.tar',
 
-				#'../../models/IDRID_stat_expert_modeldensenet201.csv',
-				#'../../models/IDRID_stat_expert_modeldensenet169.csv',
-				#'../../models/IDRID_stat_expert_modeldensenet161.csv',
-				#'../../models/IDRID_stat_expert_modeldensenet121.csv',
-				#'../../models/IDRID_stat_expert_modelresnet152.csv',
-				#'../../models/IDRID_stat_expert_modelresnet101.csv',
-				#'../../models/IDRID_stat_expert_modelresnet50.csv',
-				#'../../models/IDRID_stat_expert_modelresnet34.csv',
-				#'../../models/IDRID_stat_expert_modelresnet18.csv'
+				'../../models/IRID_stat_expert-m-densenet201.pth.tar',
+				'../../models/IRID_stat_expert-m-densenet169.pth.tar',
+				'../../models/IRID_stat_expert-m-densenet161.pth.tar',
+				'../../models/IRID_stat_expert-m-densenet121.pth.tar',
+				'../../models/IRID_stat_expert-m-resnet152.pth.tar',
+				'../../models/IRID_stat_expert-m-resnet101.pth.tar',
+				'../../models/IRID_stat_expert-m-resnet50.pth.tar',
+				'../../models/IRID_stat_expert-m-resnet34.pth.tar',
+				'../../models/IRID_stat_expert-m-resnet18.pth.tar'
 			]
 		
 	timestampLaunch = ''

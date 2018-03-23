@@ -4,6 +4,7 @@ from PIL import Image
 
 import torch
 from torch.utils.data import Dataset
+import matplotlib.pyplot as plt
 
 #-------------------------------------------------------------------------------- 
 def one_hot(val, nclasses):
@@ -61,8 +62,8 @@ class DatasetGenerator (Dataset):
 		try: imageLabel= torch.FloatTensor(self.listImageLabels[index])
 		except: imageLabel = None
 		
-		# print (imageLabel)
 		if self.transform != None: imageData = self.transform(imageData)
+		else: imageData = np.array(Image.open(imagePath).convert('RGB'), dtype = 'uint8')
 		
 		return imageData, imageLabel, imagePath
 		
